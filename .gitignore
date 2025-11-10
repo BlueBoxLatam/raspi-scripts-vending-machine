@@ -1,0 +1,11 @@
+# Environments
+.venv/
+heladera-scripts/.venv/
+__pycache__/
+
+# IDE specific files
+.vscode/
+.idea/
+
+# OS specific files
+*.DS_Store
