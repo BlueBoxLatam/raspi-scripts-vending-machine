@@ -54,19 +54,25 @@ if NFC_REAL_MODE:
         PN532_READER.SAM_configuration()
         print("[NFC] PN532 inicializado correctamente (Modo I2C).")
     except Exception as e:
+        # Esto captura errores de inicialización de I2C o PN532, 
+        # pero permite el modo de simulación si falla la importación.
         print(f"[ERROR NFC] Fallo al inicializar PN532: {e}")
         NFC_REAL_MODE = False
 
 
 # Función para limpiar el UID y formatearlo como un string de dígitos
 def format_uid(uid_bytes):
-    """Convierte un array de bytes UID a un string hexadecimal sin separadores."""
-    # Ejemplo de bytes: b'\x53\xcd\xf5\x58\xa2\x00\x01'
-    # Resultado esperado: "53cdf558a20001"
-    
-    # Convierte el array de bytes a una cadena hexadecimal
+    """
+    Convierte un array de bytes UID a un string hexadecimal con dos puntos de separacion (:)
+    para que coincida con el formato de Firestore (ej. 53:CD:F5:58:A2:00:01).
+    """
+    # 1. Convierte el array de bytes a una cadena hexadecimal en mayúsculas
     uid_hex = uid_bytes.hex().upper() 
-    return uid_hex
+    
+    # 2. Inserta el separador ':' cada 2 caracteres (0, 2, 4, 6, ...)
+    formatted_uid = ':'.join(uid_hex[i:i+2] for i in range(0, len(uid_hex), 2))
+    
+    return formatted_uid
 
 # Función principal para la lectura NFC
 def read_nfc_card_uid():
@@ -82,7 +88,7 @@ def read_nfc_card_uid():
             
             if uid_bytes is not None:
                 # El UID es un array de bytes (ej. b'\x53\xcd\xf5\x58\xa2\x00\x01')
-                student_uid = format_uid(uid_bytes)
+                student_uid = format_uid(uid_bytes) # <-- Se usa la nueva función formateada
                 print(f"[NFC REAL] Tarjeta detectada. UID: {student_uid}")
                 return student_uid
             
@@ -91,8 +97,8 @@ def read_nfc_card_uid():
     else:
         # --- Lógica de Simulación (Fallback) ---
         time.sleep(3)  # Simula el tiempo que toma leer la tarjeta
-        # UID de prueba basado en el formato que mencionaste (limpio y sin separadores)
-        simulated_uid = "53CDF558A20001" 
+        # UID de prueba basado en el formato de Firestore
+        simulated_uid = "53:CD:F5:58:A2:00:01" # <-- ¡UID SIMULADO CORREGIDO CON ":"!
         print(f"[NFC SIMULADO] Tarjeta detectada. UID: {simulated_uid}")
         return simulated_uid
 
@@ -170,9 +176,9 @@ def main_loop():
             continue # Si no lee, vuelve a esperar
         
         # 2. Construir el payload para la Cloud Function
-        # CORREGIDO: Usamos "nfcUid" en lugar de "uid" para coincidir con el backend.
+        # El UID ya está formateado correctamente con ":" en read_nfc_card_uid()
         payload = {
-            "nfcUid": student_uid, # <-- ¡CLAVE CORREGIDA!
+            "nfcUid": student_uid, 
             "machineId": VENDING_MACHINE_ID
         }
         
