@@ -170,9 +170,9 @@ def main_loop():
             continue # Si no lee, vuelve a esperar
         
         # 2. Construir el payload para la Cloud Function
-        # El UID se envía sin separadores, como lo requiere el backend.
+        # CORREGIDO: Usamos "nfcUid" en lugar de "uid" para coincidir con el backend.
         payload = {
-            "uid": student_uid,
+            "nfcUid": student_uid, # <-- ¡CLAVE CORREGIDA!
             "machineId": VENDING_MACHINE_ID
         }
         
