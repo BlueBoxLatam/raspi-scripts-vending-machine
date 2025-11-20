@@ -134,7 +134,7 @@ def start_video_stream():
     ffmpeg_command = [
         'ffmpeg',
         '-f', 'v4l2',
-        '-framerate', '12',         # Confirmamos 10 FPS (es estable)
+        '-framerate', '12',         # Confirmamos 12 FPS (es estable)
         '-video_size', '1280x720',  
         '-i', '/dev/video0', 
         '-t', str(DURATION_SECONDS),
