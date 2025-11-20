@@ -26,7 +26,7 @@ CLOUD_FUNCTION_ENDPOINT = "https://nfc-identify-student-502601695815.us-central1
 
 # 2. IP Externa de la VM de Compute Engine (SERVIDOR DE VIDEO)
 # La IP que aparece en tu imagen: 34.55.59.162
-VM_EXTERNAL_IP = "34.55.59.162"
+VM_EXTERNAL_IP = "34.55.59.16"
 
 # 3. Puerto y Protocolo para el streaming de video (Debe coincidir con la regla de Firewall)
 SRT_PORT = 9000
@@ -134,20 +134,22 @@ def start_video_stream():
     ffmpeg_command = [
         'ffmpeg',
         '-f', 'v4l2',
-        '-framerate', '15',         # <--- CAMBIO 1: Bajamos a 15 FPS para aliviar la CPU
-        '-video_size', '1280x720',  # <--- CAMBIO 2: Resolución HD (Mejor para la IA)
+        '-framerate', '12',         # Confirmamos 10 FPS (es estable)
+        '-video_size', '1280x720',  
         '-i', '/dev/video0', 
         '-t', str(DURATION_SECONDS),
         '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
         '-pix_fmt', 'yuv420p',
         '-vcodec', 'libx264',
-        '-preset', 'veryfast',      # Mantenemos veryfast
+        '-preset', 'veryfast',     
         '-tune', 'zerolatency',
-        '-b:v', '1500k',            # <--- CAMBIO 3: Subimos bitrate a 1.5Mbps para calidad HD
+        '-b:v', '1000k',            # <--- CAMBIO 1: Bajamos a 1Mbps (Más ligero)
+        '-bufsize', '2000k',        # Ayuda a gestionar picos de datos
         '-f', 'mpegts', 
-        SRT_URL
+        # CAMBIO 2: Agregamos ?latency=2000000 (2 segundos en microsegundos) a la URL
+        f"{SRT_URL}&latency=2000000" 
     ]
-    
+
     try:
         # Usamos subprocess.Popen para que el stream corra en segundo plano
         process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
