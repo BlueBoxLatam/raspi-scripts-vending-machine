@@ -130,20 +130,21 @@ def start_video_stream():
     """Inicia el streaming de video de la webcam usando FFmpeg y SRT."""
     print(f"\n[VIDEO] Iniciando streaming hacia {SRT_URL}...")
     
-    # Comando FFmpeg para capturar, codificar a H.264 y transmitir por SRT.
-    # NOTA: Asegúrate de que tu webcam sea /dev/video0
+    # Comando FFmpeg MEJORADO para 720p
     ffmpeg_command = [
         'ffmpeg',
         '-f', 'v4l2',
+        '-framerate', '15',         # <--- CAMBIO 1: Bajamos a 15 FPS para aliviar la CPU
+        '-video_size', '1280x720',  # <--- CAMBIO 2: Resolución HD (Mejor para la IA)
         '-i', '/dev/video0', 
         '-t', str(DURATION_SECONDS),
         '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
         '-pix_fmt', 'yuv420p',
         '-vcodec', 'libx264',
-        '-preset', 'veryfast',
+        '-preset', 'veryfast',      # Mantenemos veryfast
         '-tune', 'zerolatency',
-        '-b:v', '800k', # Bitrate de video (800 kbps para mantener baja la carga).
-        '-f', 'mpegts', # Formato de contenedor (compatible con SRT).
+        '-b:v', '1500k',            # <--- CAMBIO 3: Subimos bitrate a 1.5Mbps para calidad HD
+        '-f', 'mpegts', 
         SRT_URL
     ]
     
