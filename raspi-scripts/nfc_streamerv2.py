@@ -35,7 +35,7 @@ SRT_URL = f"srt://{VM_EXTERNAL_IP}:{SRT_PORT}?mode=caller&latency=2000000"
 DURATION_SECONDS = 40
 
 # ID único de esta heladera
-VENDING_MACHINE_ID = "vm-school-001" 
+VENDING_MACHINE_ID = "vm_001" 
 
 # PIN de control para la cerradura (ejemplo: BCM pin 17)
 LOCK_PIN = 17 
