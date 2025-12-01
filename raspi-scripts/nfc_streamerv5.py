@@ -110,14 +110,19 @@ def disconnect():
     print("❌ [SOCKET] Desconectado.")
 
 # ESTE ES EL EVENTO CLAVE QUE ESPERAMOS DEL SERVIDOR
+
 @sio.on('server_verified_video')
 def on_server_auth(data):
-    global waiting_for_door_open
+    global waiting_for_door_open, is_streaming
+    
+    # VALIDACIÓN EXTRA: Solo abrir si estamos transmitiendo activamente
     if data.get('machineId') == VENDING_ID and data.get('authorized'):
-        print("\n✅ [SERVIDOR] Video Verificado. Autorización recibida.")
-        set_lock('open')
-        waiting_for_door_open = False # Salimos del estado de espera
-
+        if is_streaming and waiting_for_door_open:
+            print("\n✅ [SERVIDOR] Video Verificado. Autorización recibida.")
+            set_lock('open')
+            waiting_for_door_open = False # Salimos del estado de espera
+        else:
+            print("\n⚠️ [SERVIDOR] Autorización recibida tarde (Timeout ya ocurrió). Ignorando.")
 @sio.on('force_remote_close')
 def on_close(data):
     global is_streaming
@@ -197,8 +202,8 @@ def main():
                             while waiting_for_door_open:
                                 sio.sleep(0.5) # CRUCIAL: Permite recibir el evento del socket
                                 
-                                # Timeout de seguridad (30s)
-                                if time.time() - start_wait > 30:
+                                # Timeout de seguridad (60s)
+                                if time.time() - start_wait > 60:
                                     print("⚠️ [TIMEOUT] El servidor no confirmó el video.")
                                     stop_ffmpeg()
                                     is_streaming = False
