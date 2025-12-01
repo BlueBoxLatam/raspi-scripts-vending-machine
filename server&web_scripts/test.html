@@ -56,7 +56,7 @@
         .video-overlay {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center;
-            color: white; font-weight: bold; display: none;
+            color: white; font-weight: bold; display: none; z-index: 10;
         }
     </style>
 </head>
@@ -66,10 +66,10 @@
         <h2 style="margin-top:0">📹 Cámara en Vivo</h2>
         <div class="video-box">
             <video id="video" muted playsinline></video>
-            <div id="videoOverlay" class="video-overlay" style="display: flex;">Esperando Cliente...</div>
-            <div style="position:absolute; top:10px; right:10px; background:red; padding:2px 8px; border-radius:4px; font-size:12px;">LIVE</div>
+            <div id="videoOverlay" class="video-overlay">Conectando Video...</div>
+            <div style="position:absolute; top:10px; right:10px; background:red; padding:2px 8px; border-radius:4px; font-size:12px; z-index:11;">LIVE</div>
         </div>
-        <p id="statusText" style="color:#666; margin-top:10px;">⚪ Sistema desconectado</p>
+        <p id="statusText" style="color:#666; margin-top:10px;">Esperando conexión...</p>
     </div>
 
     <div class="right-panel">
@@ -113,7 +113,8 @@
 
     <script>
         // --- 1. CONFIGURACIÓN ---
-        const API_URL = "http://34.55.59.16:3000"; // Tu IP
+        // Asegúrate que esta IP es correcta
+        const API_URL = "http://34.55.59.16:3000"; 
         const STREAM_URL = "http://34.55.59.16/hls/stream.m3u8";
 
         const socket = io(API_URL);
@@ -125,56 +126,54 @@
 
         const video = document.getElementById('video');
         const overlay = document.getElementById('videoOverlay');
-        const statusText = document.getElementById('statusText');
 
-        // --- 2. GESTIÓN DE VIDEO ---
+        // --- 2. GESTIÓN DE VIDEO OPTIMIZADA ---
         function resetVideoPlayer() {
             if (hls) {
                 hls.destroy();
                 hls = null;
             }
             video.pause();
-            video.removeAttribute('src');
+            video.removeAttribute('src'); 
             video.load();
-            
             overlay.style.display = 'flex';
-            overlay.innerText = 'Esperando Cliente...';
+            overlay.innerText = "Esperando señal...";
         }
 
         function playLiveStream() {
+            overlay.innerText = "Cargando Stream...";
+            // Timestamp anti-caché
             const freshUrl = `${STREAM_URL}?t=${Date.now()}`;
-            console.log("Iniciando video fresco:", freshUrl);
-
-            overlay.innerText = 'Conectando Video...';
+            console.log("▶️ Iniciando video:", freshUrl);
 
             if (Hls.isSupported()) {
                 hls = new Hls({
-                    maxBufferLength: 5,
-                    liveSyncDurationCount: 2,
-                    manifestLoadingTimeOut: 10000
+                    maxBufferLength: 2, // Buffer mínimo para latencia ultra baja
+                    liveSyncDurationCount: 1,
+                    manifestLoadingTimeOut: 5000
                 });
                 
                 hls.loadSource(freshUrl);
                 hls.attachMedia(video);
                 
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    video.play().catch(e => console.log("Interacción requerida:", e));
-                    overlay.style.display = 'none'; // Ocultar overlay solo con éxito
+                    video.play().catch(e => console.log("Autoplay bloqueado:", e));
+                    overlay.style.display = 'none';
                 });
 
                 hls.on(Hls.Events.ERROR, function (event, data) {
                     if (data.fatal) {
                         switch (data.type) {
                             case Hls.ErrorTypes.NETWORK_ERROR:
-                                console.log("Esperando stream... Reintentando.");
+                                console.log("⚠️ Red: Esperando segmentos...");
                                 hls.startLoad();
                                 break;
                             case Hls.ErrorTypes.MEDIA_ERROR:
                                 hls.recoverMediaError();
                                 break;
                             default:
-                                console.error("Error fatal de HLS. Destruyendo.");
-                                resetVideoPlayer();
+                                console.log("❌ Error fatal video");
+                                hls.destroy();
                                 break;
                         }
                     }
@@ -189,31 +188,25 @@
             }
         }
 
-        // --- 3. SOCKET LÓGICA (NUEVO FLUJO) ---
+        // --- 3. SOCKET LÓGICA ---
         socket.on('connect', () => {
-            statusText.innerText = "🟢 Sistema Listo. Esperando tarjeta...";
+            document.getElementById('statusText').innerText = "🟢 Sistema Listo. Esperando tarjeta...";
             socket.emit('join_operator');
         });
 
-        // Servidor avisa que un cliente está escaneando su tarjeta
-        socket.on('client_connecting', (data) => {
-            statusText.innerText = `🟡 Handshake iniciado en máquina ${data.machineId}...`;
-            overlay.style.display = 'flex';
-            overlay.innerText = 'Esperando Fuente de Video...';
-        });
-
-        // El servidor ha verificado el video y nos da luz verde
-        socket.on('video_verified_start_session', (data) => {
-            console.log("CLIENTE VERIFICADO:", data);
+        // ESTA ES LA CLAVE: El servidor ya verificó el video, así que cargamos YA.
+        socket.on('student_scanned', (data) => {
+            console.log("⚡ CLIENTE RECIBIDO:", data);
             
-            // 1. Mostrar datos y activar UI
+            // 1. Mostrar datos UI
             startSessionUI(data);
 
-            // 2. Iniciar video (sin delay)
-            playLiveStream();
+            // 2. Video INMEDIATO (Sin setTimeout)
+            // Pequeño reset por seguridad y play
+            resetVideoPlayer();
+            playLiveStream(); 
         });
 
-        // Compra finalizada
         socket.on('transaction_complete', (data) => {
             alert(`✅ Venta Exitosa\nCliente: ${data.studentName}\nTotal: Bs ${data.total}`);
             resetSession();
@@ -228,13 +221,12 @@
             document.getElementById('sName').innerText = data.name;
             document.getElementById('sBalance').innerText = parseFloat(data.balance).toFixed(2);
             document.getElementById('btnCancel').style.display = 'block';
-            statusText.innerText = `🟢 Sesión activa para ${data.name}`;
+            document.getElementById('statusText').innerText = "🟠 Cliente en caja - Video Activo";
             
             new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play().catch(e=>{});
         }
 
         function addToCart(name, price) {
-            if (!currentSessionId) return;
             cart.push({ name, price });
             updateCartUI();
         }
@@ -244,9 +236,13 @@
             list.innerHTML = "";
             total = 0;
 
-            cart.forEach((item) => {
+            cart.forEach((item, index) => {
                 total += item.price;
-                list.innerHTML += `<div class="cart-row"><span>${item.name}</span><span>Bs ${item.price.toFixed(2)}</span></div>`;
+                list.innerHTML += `
+                    <div class="cart-row">
+                        <span>${item.name}</span>
+                        <span>Bs ${item.price}</span>
+                    </div>`;
             });
 
             document.getElementById('cartTotal').innerText = total.toFixed(2);
@@ -257,11 +253,11 @@
         }
 
         async function processCheckout() {
-            if(!currentSessionId || total === 0) return;
+            if(!currentSessionId) return;
+            if(total === 0) return;
 
             const btn = document.getElementById('btnCheckout');
             btn.innerText = "Procesando...";
-            btn.disabled = true;
             
             try {
                 const response = await fetch(`${API_URL}/api/checkout`, {
@@ -274,17 +270,13 @@
                     })
                 });
                 const res = await response.json();
-                
                 if(!res.success) {
                     alert("Error: " + res.error);
                     btn.innerText = "COBRAR (Entregado)";
-                    btn.disabled = false;
                 }
             } catch (e) {
-                alert("Error de conexión al procesar el pago.");
+                alert("Error de conexión");
                 console.error(e);
-                btn.innerText = "COBRAR (Entregado)";
-                btn.disabled = false;
             }
         }
 
@@ -302,15 +294,10 @@
             document.getElementById('btnCancel').style.display = 'none';
             document.getElementById('btnCheckout').classList.remove('enabled');
             document.getElementById('btnCheckout').innerText = "COBRAR (Entregado)";
-            document.getElementById('btnCheckout').disabled = false;
-            statusText.innerText = "🟢 Sistema Listo. Esperando tarjeta...";
+            document.getElementById('statusText').innerText = "🟢 Sistema Listo. Esperando tarjeta...";
 
             resetVideoPlayer();
         }
-        
-        // Cargar estado inicial
-        resetVideoPlayer();
-
     </script>
 </body>
 </html>
