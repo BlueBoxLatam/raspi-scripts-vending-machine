@@ -2,7 +2,7 @@ import requests
 import time
 import subprocess
 import os
-import socketio
+import socketio # 🆕 Librería para escuchar al servidor
 import threading
 import signal
 
@@ -19,7 +19,7 @@ except ImportError:
 
 # ================= CONFIGURACIÓN =================
 VM_EXTERNAL_IP = "34.55.59.16"
-API_URL = f"http://{VM_EXTERNAL_IP}:3000"
+API_URL = f"http://{VM_EXTERNAL_IP}:3000" # Base URL
 CLOUD_FUNCTION_ENDPOINT = f"{API_URL}/api/identify-student"
 SRT_PORT = 9000
 SRT_URL = f"srt://{VM_EXTERNAL_IP}:{SRT_PORT}?mode=caller&latency=2000000"
@@ -28,11 +28,13 @@ VENDING_MACHINE_ID = "vm_001"
 LOCK_PIN = 17 
 
 # Variables de Control
+# Variables de Control de Estado
 session_active = False
 stop_event = threading.Event()
 pn532 = None
 # =================================================
 
+# Inicializar SocketIO
 sio = socketio.Client()
 
 def init_nfc():
@@ -50,6 +52,7 @@ def init_nfc():
         print(f"[ERROR NFC] No se pudo iniciar: {e}")
         return False
 
+# --- FUNCIONES ---
 def read_nfc_safe():
     """Lectura no bloqueante"""
     global pn532
@@ -189,5 +192,6 @@ if __name__ == "__main__":
         main_loop()
     except KeyboardInterrupt:
         print("\nApagando...")
+        print("\nApagando sistema...")
         control_solenoid_lock('close')
         sio.disconnect()
