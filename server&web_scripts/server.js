@@ -6,270 +6,227 @@ const { Server } = require('socket.io');
 const admin = require('firebase-admin');
 const cors = require('cors');
 
-// 1. Inicializar Firebase
-// Asegúrate de tener el archivo serviceAccountKey.json en la misma carpeta
-const serviceAccount = require('./serviceAccountKey.json');
+// --- CONFIGURACIÓN ---
+const HLS_DIR = '/var/www/html/hls'; // Directorio donde FFmpeg guarda el video
+const PORT = 3000;
 
+// 1. Inicializar Firebase
+const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
-
 const db = admin.firestore();
 
-// 2. Configurar Servidor Express y Socket.IO
+// 2. Configurar Express y Socket.IO
 const app = express();
 app.use(cors());
-app.use(express.json()); // Para entender JSON
+app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: "*", 
-    methods: ["GET", "POST"]
-  }
+  cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-// Estructura para manejar sesiones pendientes y sockets de RPi
-const pendingSessions = new Map();
+// --- VARIABLES DE ESTADO EN MEMORIA ---
+// Usamos esto para evitar latencia de DB en el ciclo crítico de video
+let currentSession = null; 
+let videoWatcher = null;
 
-// --- WebSockets (Tiempo Real) ---
+// --- FUNCIONES UTILITARIAS ---
+
+// A. Limpieza de Caché de Video (Borra .ts y .m3u8)
+const cleanVideoCache = () => {
+    try {
+        if (fs.existsSync(HLS_DIR)) {
+            const files = fs.readdirSync(HLS_DIR);
+            for (const file of files) {
+                if (file.endsWith('.m3u8') || file.endsWith('.ts')) {
+                    fs.unlinkSync(path.join(HLS_DIR, file));
+                }
+            }
+            console.log("🧹 [LIMPIEZA] Caché de video eliminado.");
+        }
+    } catch (err) {
+        console.error("⚠️ Error limpiando video:", err);
+    }
+};
+
+// B. Monitor de Video (El "Ojo" del Servidor)
+const startVideoWatcher = (sessionId) => {
+    console.log("👀 [VIGILANCIA] Esperando señal de video en disco...");
+    
+    // Si ya había un watcher, lo cerramos
+    if (videoWatcher) videoWatcher.close();
+
+    // Vigilamos la carpeta HLS
+    videoWatcher = fs.watch(HLS_DIR, (eventType, filename) => {
+        if (filename && (filename.endsWith('.ts') || filename.endsWith('.m3u8'))) {
+            
+            // ¡DETECTAMOS VIDEO!
+            if (currentSession && currentSession.id === sessionId && !currentSession.videoVerified) {
+                console.log(`🎥 [CONFIRMADO] Video detectado (${filename}). Autorizando apertura.`);
+                
+                currentSession.videoVerified = true;
+                
+                // 1. Avisar al Frontend (Muestra datos)
+                io.to('operator_room').emit('student_scanned', {
+                    uid: currentSession.studentId,
+                    name: currentSession.studentName,
+                    balance: currentSession.studentBalance,
+                    sessionId: sessionId
+                });
+
+                // 2. Avisar a Raspberry Pi (Abre Puerta)
+                io.emit('server_verified_video', { 
+                    machineId: currentSession.machineId,
+                    authorized: true
+                });
+
+                // Dejamos de vigilar para no saturar CPU
+                if (videoWatcher) videoWatcher.close();
+            }
+        }
+    });
+};
+
+// --- WEBSOCKETS ---
 io.on('connection', (socket) => {
-  console.log('🔌 Nuevo cliente conectado:', socket.id);
+  console.log('🔌 Cliente conectado:', socket.id);
   
+  // AL CONECTAR EL OPERADOR (Fix para F5)
   socket.on('join_operator', () => {
     socket.join('operator_room');
     console.log(`User ${socket.id} joined operator_room`);
-  });
 
-  // La RPi se reporta lista con su session ID
-  socket.on('rpi_ready', ({ sessionId }) => {
-    console.log(`[HANDSHAKE] RPi reportada para sesión: ${sessionId}`);
-    if (pendingSessions.has(sessionId)) {
-      const session = pendingSessions.get(sessionId);
-      session.rpiSocketId = socket.id; // Guardamos el socket ID
-      pendingSessions.set(sessionId, session);
+    // Si hay una sesión activa en memoria, enviarla al nuevo socket
+    if (currentSession && currentSession.videoVerified) {
+        console.log("🔄 Restaurando sesión para operador reconectado.");
+        socket.emit('student_scanned', {
+            uid: currentSession.studentId,
+            name: currentSession.studentName,
+            balance: currentSession.studentBalance,
+            sessionId: currentSession.id
+        });
     }
-  });
-
-  socket.on('disconnect', () => {
-    console.log('❌ Cliente desconectado:', socket.id);
   });
 });
 
-// ==========================================
-//              UTILIDADES
-// ==========================================
-function cleanVideoCache() {
-  const hlsDir = '/var/www/html/hls'; 
-  try {
-    if (fs.existsSync(hlsDir)) {
-      const files = fs.readdirSync(hlsDir);
-      for (const file of files) {
-        if (file.endsWith('.m3u8') || file.endsWith('.ts')) {
-          fs.unlinkSync(path.join(hlsDir, file));
-        }
-      }
-      console.log("🧹 Archivos de video antiguos eliminados.");
-    }
-  } catch (err) {
-    console.error("⚠️ Error limpiando video:", err);
-  }
-}
+// ================= RUTAS API =================
 
-// ==========================================
-//              RUTAS API
-// ==========================================
-
-// 1. RUTA DE DIAGNÓSTICO
-app.post('/api/transaction', (req, res) => {
-  console.log("\n🧪 [DIAGNOSTIC] Petición de prueba recibida.");
-  res.status(200).json({
-    status: "ok",
-    message: "Conexión RPi <-> Cloud exitosa",
-    receivedData: req.body
-  });
-});
-
-// 2. IDENTIFICACIÓN DE ESTUDIANTE (INICIO DE HANDSHAKE)
+// 1. IDENTIFICACIÓN (INICIO)
 app.post('/api/identify-student', async (req, res) => {
   const { nfcUid, machineId } = req.body;
-  const hlsDir = '/var/www/html/hls';
-
-  console.log(`\n📡 RPi reporta tarjeta: ${nfcUid} en máquina: ${machineId}`);
-
-  if (!nfcUid) {
-    return res.status(400).json({ error: 'UID no proporcionado' });
-  }
+  console.log(`\n📡 Solicitud de acceso: ${nfcUid}`);
 
   try {
+    // A. Validaciones
     const studentRef = db.collection('students').doc(nfcUid);
     const doc = await studentRef.get();
 
-    if (!doc.exists || doc.data().status !== 'active') {
-      console.log('⚠️ Estudiante no encontrado o inactivo.');
-      return res.status(404).json({ error: 'Estudiante no registrado o inactivo' });
-    }
-    
+    if (!doc.exists) return res.status(404).json({ error: 'Estudiante no encontrado' });
     const studentData = doc.data();
-    console.log(`✅ Identificado: ${studentData.name} - Saldo: ${studentData.balance}`);
+    if (studentData.status !== 'active') return res.status(403).json({ error: 'Cuenta inactiva' });
 
-    // --- INICIO DEL NUEVO FLUJO ---
-    // 1. Limpiar caché de video ANTES de hacer nada.
+    console.log(`✅ Usuario válido: ${studentData.name}. Preparando entorno...`);
+
+    // B. LIMPIEZA PREVENTIVA (Anti-Caché)
     cleanVideoCache();
 
-    // 2. Crear sesión en Firestore
-    const sessionId = `session_${machineId}`;
-    const sessionRef = db.collection('active_sessions').doc(sessionId);
-    await sessionRef.set({
-      studentId: nfcUid,
-      studentName: studentData.name,
-      studentBalance: studentData.balance,
-      openedAt: admin.firestore.FieldValue.serverTimestamp(),
-      status: "pending_video", // Nuevo estado
-      machineId: machineId
+    // C. Crear Sesión en Memoria y BD
+    const sessionId = `session_${machineId}_${Date.now()}`;
+    
+    currentSession = {
+        id: sessionId,
+        studentId: nfcUid,
+        studentName: studentData.name,
+        studentBalance: studentData.balance,
+        machineId: machineId,
+        videoVerified: false, // Importante: Aún no verificado
+        cart: [],
+        total: 0
+    };
+
+    // Guardar en Firestore (Opcional, para logs)
+    await db.collection('active_sessions').doc(sessionId).set({
+        ...currentSession,
+        status: "waiting_for_video",
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // 3. Avisar al Frontend que se está conectando un cliente.
-    io.to('operator_room').emit('client_connecting', { machineId });
+    // D. INICIAR VIGILANCIA DE VIDEO
+    startVideoWatcher(sessionId);
 
-    // 4. Guardar datos de la sesión para el handshake
-    pendingSessions.set(sessionId, {
-        studentData: {
-            uid: nfcUid,
-            name: studentData.name,
-            lastname: `${studentData.paternalSurname || ''} ${studentData.maternalSurname || ''}`,
-            balance: studentData.balance,
-            sessionId: sessionId
-        },
-        rpiSocketId: null, // Aún no lo sabemos
-        status: 'waiting_for_stream'
-    });
-
-    // 5. Configurar el Watcher para el archivo de video
-    const watcher = fs.watch(hlsDir, (eventType, filename) => {
-      if (filename === 'stream.m3u8') {
-          console.log(`[HANDSHAKE] ✅ Archivo de stream detectado para ${sessionId}!`);
-          
-          const session = pendingSessions.get(sessionId);
-          if (session && session.status === 'waiting_for_stream') {
-              
-              // A. Avisar al Frontend para que inicie la UI y el video
-              io.to('operator_room').emit('video_verified_start_session', session.studentData);
-              console.log(`[HANDSHAKE] -> Avisando al frontend.`);
-
-              // B. Enviar orden de abrir puerta a la RPi correcta
-              if (session.rpiSocketId) {
-                  io.to(session.rpiSocketId).emit('open_door', { machineId });
-                  console.log(`[HANDSHAKE] -> Enviando orden de abrir a ${session.rpiSocketId}`);
-              } else {
-                  console.error(`[HANDSHAKE] ERROR: No se encontró socket para ${sessionId}`);
-              }
-              
-              // C. Actualizar estado de la sesión
-              session.status = 'completed';
-              db.collection('active_sessions').doc(sessionId).update({ status: 'live_monitoring' });
-          }
-          
-          // Limpiar
-          watcher.close();
-          setTimeout(() => pendingSessions.delete(sessionId), 30000); // Limpia la sesión pendiente después de un tiempo
-      }
-    });
-
-    // 6. Responder a la RPi para que inicie el stream
+    // E. RESPONDER A RASPBERRY PI
+    // Le decimos: "Usuario OK, empieza a transmitir, pero NO ABRAS todavía"
     res.status(200).json({
-      status: 'PENDING_VIDEO',
-      sessionId: sessionId // La RPi necesita saber su ID de sesión
+      authorized: true,
+      action: "START_STREAM_ONLY", // Nueva instrucción clara
+      message: "Esperando video para abrir puerta"
     });
 
   } catch (error) {
-    console.error('🔥 Error en identify-student:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('🔥 Error:', error);
+    res.status(500).json({ error: 'Error interno' });
   }
 });
 
-// 3. PROCESAR COBRO (CHECKOUT)
+// 2. CHECKOUT (FINAL)
 app.post('/api/checkout', async (req, res) => {
   const { sessionId, items, total } = req.body; 
-
-  console.log(`\n💵 Procesando cobro para sesión: ${sessionId}`);
-  console.log(`   Items: ${items.length} | Total: Bs ${total}`);
+  console.log(`\n💵 Cobrando sesión: ${sessionId} | Total: ${total}`);
 
   try {
-    // A. Obtener datos de la sesión actual
-    const sessionRef = db.collection('active_sessions').doc(sessionId);
-    const sessionDoc = await sessionRef.get();
-
-    if (!sessionDoc.exists) {
-      return res.status(404).json({ error: "Sesión no encontrada o ya cerrada" });
+    if (!currentSession || currentSession.id !== sessionId) {
+        return res.status(400).json({ error: "Sesión no válida o expirada" });
     }
 
-    const sessionData = sessionDoc.data();
-    const studentId = sessionData.studentId;
-
-    // B. Transacción Atómica (Cobro + Historial + Limpieza)
-    const studentRef = db.collection('students').doc(studentId);
-    
+    // A. Transacción DB
+    const studentRef = db.collection('students').doc(currentSession.studentId);
     await db.runTransaction(async (t) => {
-      const studentDoc = await t.get(studentRef);
-      const currentBalance = studentDoc.data().balance;
-      const newBalance = currentBalance - total;
+      const sDoc = await t.get(studentRef);
+      const newBal = sDoc.data().balance - total;
+      if (newBal < 0) throw new Error("Saldo insuficiente");
 
-      if (newBalance < 0) {
-        throw new Error("Saldo insuficiente");
-      }
-
-      // 1. Crear el recibo en "transactions"
-      const transactionRef = db.collection('transactions').doc();
-      t.set(transactionRef, {
+      // Guardar historial
+      const txRef = db.collection('transactions').doc();
+      t.set(txRef, {
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        machineId: sessionData.machineId,
-        studentId: studentId,
-        studentName: sessionData.studentName,
-        items: items,
-        totalAmount: total,
-        type: "purchase"
+        sessionId,
+        studentId: currentSession.studentId,
+        items,
+        total,
+        newBalance: newBal
       });
 
-      // 2. Descontar saldo al alumno
-      t.update(studentRef, { balance: newBalance });
-
-      // 3. Borrar la sesión activa
-      t.delete(sessionRef); 
+      // Actualizar saldo
+      t.update(studentRef, { balance: newBal });
     });
 
-    console.log("✅ Cobro exitoso. Transacción guardada.");
+    console.log("✅ Cobro exitoso.");
 
-    // Limpieza de video
-    cleanVideoCache();
+    // B. COMANDO DE CIERRE A RASPBERRY
+    io.emit('force_remote_close', { machineId: currentSession.machineId });
 
-    // C. Avisar al Frontend (Monitor)
+    // C. CONFIRMACIÓN A FRONTEND
     io.to('operator_room').emit('transaction_complete', {
       success: true,
-      studentName: sessionData.studentName,
+      studentName: currentSession.studentName,
       total: total
     });
 
-    // D. COMANDO CRÍTICO: CERRAR PUERTA RASPBERRY PI
-    console.log(`🔒 Enviando orden de cierre a: ${sessionData.machineId}`);
-    io.emit('force_remote_close', { 
-      machineId: sessionData.machineId 
-    });
+    // D. LIMPIEZA FINAL
+    cleanVideoCache(); // Borrar video inmediatamente
+    currentSession = null; // Borrar sesión de memoria
+    if(videoWatcher) videoWatcher.close();
 
     res.status(200).json({ success: true });
 
   } catch (error) {
-    console.error("🔥 Error en checkout:", error);
+    console.error("🔥 Error checkout:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Iniciar servidor
-const PORT = 3000;
 server.listen(PORT, () => {
-  console.log(`\n🚀 Servidor Blue Box MVP escuchando en puerto ${PORT}`);
-  console.log(`   Rutas Activas:`);
-  console.log(`   - POST /api/transaction (Diag)`);
-  console.log(`   - POST /api/identify-student (Inicio)`);
-  console.log(`   - POST /api/checkout (Final)`);
+  console.log(`🚀 Blue Box Server v2 corriendo en puerto ${PORT}`);
 });
