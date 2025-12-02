@@ -77,12 +77,22 @@ def start_ffmpeg():
     
     print(f"🎥 [FFMPEG] Iniciando transmisión hacia {VM_IP}...")
     cmd = [
-        'ffmpeg', '-f', 'v4l2', '-framerate', '15', '-video_size', '1280x720',
+        'ffmpeg', 
+        '-f', 'v4l2', 
+        '-framerate', '15',          # 15 FPS es suficiente
+        '-video_size', '640x480',    # BAJAR RESOLUCIÓN (Clave para velocidad)
         '-i', '/dev/video0', 
         '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
-        '-pix_fmt', 'yuv420p', '-vcodec', 'libx264', 
-        '-preset', 'ultrafast', '-tune', 'zerolatency', '-b:v', '600k',
-        '-f', 'mpegts', SRT_URL
+        '-pix_fmt', 'yuv420p', 
+        '-c:v', 'libx264',           # Codec de video
+        '-preset', 'ultrafast',      # Mínimo uso de CPU
+        '-tune', 'zerolatency',      # Optimización para streaming
+        '-g', '30',                  # GOP: Fuerza un keyframe cada 2 segundos (Vital para HLS)
+        '-keyint_min', '30',         # Asegura el intervalo
+        '-b:v', '400k',              # Bitrate ligero para red móvil/wifi
+        '-bufsize', '400k',          # Buffer pequeño para evitar acumulaciones
+        '-f', 'mpegts', 
+        SRT_URL
     ]
     # Usamos preexec_fn=os.setsid para poder matar todo el grupo de procesos luego
     stream_process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, preexec_fn=os.setsid)
