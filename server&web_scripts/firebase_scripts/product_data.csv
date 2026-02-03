@@ -1,0 +1,11 @@
+﻿sku,name,category,price,description,tags,status,stockAlertThreshold
+SAND-POLLO-01,Sándwich de Pollo Clásico,Sándwiches,15.00,Sándwich de pechuga de pollo desmenuzada con mayonesa ligera y lechuga fresca,"pollo,fresco,proteína",Available,5
+JUGO-NJA-300,Jugo de Naranja Natural (300ml),Bebidas,10.00,Jugo de naranja 100% natural sin conservantes ni azúcar añadida,"bebida,natural,vitamina C",Available,5
+YOG-GRAN-01,Yogurt con Granola y Frutos Rojos,Lácteos,12.00,Yogurt griego natural acompañado de granola artesanal y trozos de fresa,"lácteo,saludable,desayuno",Available,5
+ENS-FRUT-VAR,Ensalada de Frutas de Estación,Frutas,10.00,Mix de frutas frescas cortadas (papaya piña sandía y melón),"fruta,fresco,snack",Available,5
+AGUA-NAT-500,Agua Mineral sin Gas (500ml),Bebidas,5.00,Agua mineral tratada de manantial ideal para la hidratación diaria,"bebida,hidratación,agua",Available,5
+SAND-JQ-INT,Sándwich de Jamón y Queso Integral,Sándwiches,13.00,Jamón de pavo y queso mozzarella en pan integral con semillas,"integral,pavo,sándwich",Available,5
+LECHE-CHOC-250,Leche Chocolatada (250ml),Lácteos,7.00,Leche descremada con cacao natural enriquecida con vitaminas,"lácteo,energía,niños",Available,5
+BAR-CER-AVENA,Barrita de Cereal Artesanal,Snacks,6.00,Barra energética de avena miel y chispas de chocolate amargo,"snack,avena,energía",Available,5
+FRUT-MANZ-RJA,Manzana Roja Seleccionada,Frutas,4.00,Manzana roja fresca lavada y lista para consumir,"fruta,saludable,fibra",Available,5
+TEA-ICE-LIM,Té Helado de Limón (400ml),Bebidas,8.00,Té negro con infusión de limón y un toque de menta servido frío,"bebida,refrescante,té",Available,5
