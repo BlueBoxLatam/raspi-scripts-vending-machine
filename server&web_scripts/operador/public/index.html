@@ -262,12 +262,13 @@
     </div>
 
     <script>
-        // CONFIG
-        const API_URL = "http://34.55.59.16:3000";
-        const STREAM_URL = "http://34.55.59.16/hls/stream.m3u8";
-
-        // STATE
-        const socket = io(API_URL);
+        // --- 1. CONFIGURACIÓN ---
+        // Actualizado para usar el dominio seguro vía Cloudflare + Nginx
+        const API_URL = "https://api.grabbie.one";
+        const STREAM_URL = "https://api.grabbie.one/hls/stream.m3u8";
+        const socket = io(API_URL, {
+            transports: ['websocket', 'polling']
+        });
         let currentSessionId = null;
         let cart = [];
         let total = 0;
@@ -300,11 +301,23 @@
 
         async function fetchProducts() {
             try {
+                console.log("Conectando a inventario en:", `${API_URL}/api/products`);
                 const res = await fetch(`${API_URL}/api/products`);
+                if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
                 products = await res.json();
                 renderProducts();
             } catch (e) {
-                els.grid.innerHTML = '<div style="color:red; text-align:center;">Error al cargar productos</div>';
+                console.error("Fetch Error:", e);
+                els.grid.innerHTML = `
+                    <div style="grid-column: span 2; color: #ff6b6b; text-align: center; padding: 20px; border: 1px dashed #ff6b6b; border-radius: 8px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2em; margin-bottom: 10px;"></i>
+                        <h3>No se pudo cargar el inventario</h3>
+                        <p style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 5px;">${e.message}</p>
+                        <small style="color: #aaa;">
+                            Si ves "Failed to fetch", es posible que el navegador esté bloqueando la conexión.<br>
+                            Intenta abrir este archivo usando un servidor local o revisa la consola (F12).
+                        </small>
+                    </div>`;
             }
         }
 
