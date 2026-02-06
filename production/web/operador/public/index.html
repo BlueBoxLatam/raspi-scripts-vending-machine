@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Blue Box | Grabbie Operator</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #223D73;
+            --secondary: #36ABD9;
+            --complementary: #62C3D9;
+            --emphasis-1: #F2BF5E;
+            --emphasis-2: #F2921D;
+            --dark-bg: #121212;
+            --card-bg: #1E1E1E;
+            --text-main: #FFFFFF;
+            --text-muted: #AAAAAA;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; 
+            background: var(--dark-bg); 
+            color: var(--text-main); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        
+        /* --- LEFT PANEL: VIDEO & STATUS --- */
+        .left-panel { 
+            flex: 2; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            border-right: 1px solid #333; 
+            background: radial-gradient(circle at center, #1a253a 0%, #121212 100%);
+        }
+        
+        .header-brand {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header-brand h1 {
+            margin: 0;
+            color: var(--secondary);
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+        }
+        .header-brand span { color: var(--emphasis-2); }
+
+        .video-container { 
+            width: 100%; 
+            max-width: 900px; 
+            aspect-ratio: 16/9; 
+            background: #000; 
+            border: 2px solid var(--secondary); 
+            border-radius: 12px; 
+            overflow: hidden; 
+            position: relative; 
+            box-shadow: 0 0 20px rgba(54, 171, 217, 0.1);
+            margin: 0 auto;
+        }
+        
+        video { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Overlays */
+        .overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(18, 18, 18, 0.9);
+            z-index: 10;
+            transition: opacity 0.3s ease;
+        }
+        
+        .overlay.hidden { opacity: 0; pointer-events: none; }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: var(--emphasis-2);
+            border-radius: 50%;
+            width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .status-badge {
+            position: absolute; top: 15px; right: 15px;
+            background: #cc0000; color: white;
+            padding: 4px 12px; border-radius: 4px;
+            font-weight: bold; font-size: 0.8rem;
+            display: none;
+            box-shadow: 0 0 10px rgba(255,0,0,0.5);
+        }
+        .status-badge.live { display: block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .latency-stat {
+            margin-top: 15px;
+            font-family: monospace;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .latency-value { color: var(--emphasis-1); font-weight: bold; }
+
+        /* --- RIGHT PANEL: POS --- */
+        .right-panel { 
+            flex: 1; 
+            padding: 25px; 
+            display: flex; 
+            flex-direction: column; 
+            background: var(--card-bg); 
+            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+        }
+        
+        /* User Card */
+        .user-card {
+            background: linear-gradient(135deg, var(--primary) 0%, #162447 100%);
+            padding: 20px; border-radius: 12px; margin-bottom: 25px;
+            border-left: 5px solid var(--secondary);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            opacity: 0.4; transition: opacity 0.3s;
+        }
+        .user-card.active { opacity: 1; border-left-color: var(--emphasis-2); }
+        
+        .user-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--complementary); margin-bottom: 5px; }
+        .user-name { font-size: 1.8rem; font-weight: 700; margin: 0; color: white; }
+        .user-balance { font-size: 1.4rem; color: var(--emphasis-1); margin-top: 5px; }
+
+        /* Products Grid */
+        .products-section-title { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        
+        .products-grid { 
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; 
+            overflow-y: auto; flex-grow: 1; 
+            padding-right: 5px; /* Scrollbar space */
+        }
+        
+        .product-btn {
+            background: #2A2A2A; border: 1px solid #333;
+            padding: 15px; border-radius: 8px; 
+            color: white; cursor: pointer; 
+            text-align: left; 
+            transition: all 0.2s;
+            display: flex; flex-direction: column; justify-content: space-between;
+            min-height: 80px;
+        }
+        .product-btn:hover { background: #333; border-color: var(--secondary); transform: translateY(-2px); }
+        .product-btn:active { transform: scale(0.98); }
+        
+        .p-name { font-weight: 600; font-size: 1rem; margin-bottom: 5px; }
+        .p-price { color: var(--complementary); font-weight: bold; }
+        .p-img { width: 100%; height: 60px; object-fit: contain; margin-bottom: 5px; display: none; } /* Optional if we add images */
+
+        /* Cart */
+        .cart-panel {
+            background: #151515; border-radius: 12px; padding: 20px;
+            margin-top: 25px;
+            display: flex; flex-direction: column;
+            border: 1px solid #333;
+        }
+        
+        .cart-items { flex-grow: 1; max-height: 150px; overflow-y: auto; margin-bottom: 15px; }
+        .cart-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #222; font-size: 0.9rem; }
+        .cart-item span:last-child { color: var(--text-muted); }
+
+        .cart-total { display: flex; justify-content: space-between; font-size: 1.3rem; font-weight: bold; margin-bottom: 15px; color: white; }
+        
+        .checkout-btn {
+            background: var(--emphasis-2); color: white; border: none; padding: 15px; 
+            width: 100%; border-radius: 8px; font-size: 1.1rem; font-weight: bold; 
+            cursor: pointer; opacity: 0.5; pointer-events: none;
+            transition: background 0.2s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .checkout-btn.enabled { opacity: 1; pointer-events: all; }
+        .checkout-btn:hover { background: #d67d10; }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #121212; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+
+    </style>
+</head>
+<body>
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+        <div class="header-brand">
+            <h1>BLUE <span>BOX</span> <small style="font-size:0.6em; color:#666;">| OPERATOR v2.0</small></h1>
+        </div>
+
+        <div class="video-container">
+            <video id="video" muted playsinline></video>
+            
+            <!-- Badge LIVE -->
+            <div id="badgeLive" class="status-badge">LIVE FEED</div>
+
+            <!-- Idle Overlay -->
+            <div id="overlayIdle" class="overlay">
+                <i class="fas fa-satellite-dish" style="font-size: 3rem; color: var(--secondary); margin-bottom: 20px;"></i>
+                <h2 style="margin:0;">Sistema Listo</h2>
+                <p style="color: #666;">Esperando tarjeta NFC...</p>
+            </div>
+
+            <!-- Processing Overlay -->
+            <div id="overlayProcessing" class="overlay hidden">
+                <div class="spinner"></div>
+                <h2 style="color: var(--emphasis-2);">Estableciendo Video</h2>
+                <p id="procText" style="color: #ccc;">Validando seguridad...</p>
+            </div>
+        </div>
+
+        <div class="latency-stat">
+            Estado: <span id="statusText">Conectado</span> 
+            <span id="latencyBox" style="display:none; margin-left:15px;">
+                | Latencia HLS: <span id="latencyValue" class="latency-value">--</span> ms
+            </span>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+        <!-- Student Info -->
+        <div id="userCard" class="user-card">
+            <div class="user-label">Cliente Actual</div>
+            <h3 id="uName" class="user-name">--</h3>
+            <div class="user-balance">Bs <span id="uBalance">0.00</span></div>
+        </div>
+
+        <div class="products-section-title">PRODUCTOS DISPONIBLES</div>
+        
+        <!-- Dynamic Grid -->
+        <div id="productsGrid" class="products-grid">
+            <div style="text-align:center; padding:20px; color:#666;">Cargando productos...</div>
+        </div>
+
+        <!-- Cart -->
+        <div class="cart-panel">
+            <div id="cartList" class="cart-items">
+                <div style="text-align:center; padding:10px; color:#444;">Carrito Vacío</div>
+            </div>
+            
+            <div class="cart-total">
+                <span>TOTAL</span>
+                <span>Bs <span id="cartTotal">0.00</span></span>
+            </div>
+            
+            <button id="btnCheckout" class="checkout-btn" onclick="processCheckout()">
+                <i class="fas fa-check-circle"></i> COBRAR
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURACIÓN ---
+        // Actualizado para usar el dominio seguro vía Cloudflare + Nginx
+        const API_URL = "https://api.grabbie.one";
+        const STREAM_URL = "https://api.grabbie.one/hls/stream.m3u8";
+        const socket = io(API_URL, {
+            transports: ['websocket', 'polling']
+        });
+        let currentSessionId = null;
+        let cart = [];
+        let total = 0;
+        let hls = null;
+        let products = [];
+
+        // DOM ELEMENTS
+        const els = {
+            video: document.getElementById('video'),
+            overlayIdle: document.getElementById('overlayIdle'),
+            overlayProc: document.getElementById('overlayProcessing'),
+            badgeLive: document.getElementById('badgeLive'),
+            statusText: document.getElementById('statusText'),
+            latencyBox: document.getElementById('latencyBox'),
+            latencyValue: document.getElementById('latencyValue'),
+            userCard: document.getElementById('userCard'),
+            uName: document.getElementById('uName'),
+            uBalance: document.getElementById('uBalance'),
+            grid: document.getElementById('productsGrid'),
+            cartList: document.getElementById('cartList'),
+            cartTotal: document.getElementById('cartTotal'),
+            btnCheckout: document.getElementById('btnCheckout')
+        };
+
+        // --- INIT ---
+        window.onload = () => {
+            fetchProducts();
+            socket.emit('join_operator');
+        };
+
+        async function fetchProducts() {
+            try {
+                console.log("Conectando a inventario en:", `${API_URL}/api/products`);
+                const res = await fetch(`${API_URL}/api/products`);
+                if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
+                products = await res.json();
+                renderProducts();
+            } catch (e) {
+                console.error("Fetch Error:", e);
+                els.grid.innerHTML = `
+                    <div style="grid-column: span 2; color: #ff6b6b; text-align: center; padding: 20px; border: 1px dashed #ff6b6b; border-radius: 8px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2em; margin-bottom: 10px;"></i>
+                        <h3>No se pudo cargar el inventario</h3>
+                        <p style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 5px;">${e.message}</p>
+                        <small style="color: #aaa;">
+                            Si ves "Failed to fetch", es posible que el navegador esté bloqueando la conexión.<br>
+                            Intenta abrir este archivo usando un servidor local o revisa la consola (F12).
+                        </small>
+                    </div>`;
+            }
+        }
+
+        function renderProducts() {
+            els.grid.innerHTML = "";
+            products.forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = "product-btn";
+                // Usamos el SKU o ID para añadir
+                btn.onclick = () => addToCart(p);
+                btn.innerHTML = `
+                    <span class="p-name">${p.name}</span>
+                    <span class="p-price">Bs ${parseFloat(p.price).toFixed(2)}</span>
+                `;
+                els.grid.appendChild(btn);
+            });
+        }
+
+        // --- SOCKET EVENTS ---
+
+        // 1. NFC DETECTADO (Handshake comienza)
+        socket.on('nfc_pending_video', (data) => {
+            console.log("💳 NFC Detectado:", data);
+            
+            // UI Update: Mostrar "Cargando..." y datos preliminares
+            els.overlayIdle.classList.add('hidden');
+            els.overlayProc.classList.remove('hidden');
+            document.getElementById('procText').innerText = `Cliente: ${data.studentName} - Esperando Video...`;
+            
+            // Preparar UI de usuario
+            els.userCard.classList.add('active');
+            els.uName.innerText = data.studentName;
+            els.uBalance.innerText = "...";
+            
+            els.statusText.innerText = "🟠 Handshake Video...";
+        });
+
+        // 2. VIDEO CONFIRMADO (Sesión Lista)
+        socket.on('student_scanned', (data) => {
+            console.log("✅ Sesión Activa:", data);
+            currentSessionId = data.sessionId;
+
+            // UI Final
+            els.overlayProc.classList.add('hidden');
+            els.badgeLive.classList.add('live');
+            
+            els.uName.innerText = data.name;
+            els.uBalance.innerText = parseFloat(data.balance).toFixed(2);
+            
+            // Mostrar Latencia
+            els.latencyBox.style.display = 'inline';
+            els.latencyValue.innerText = data.latencyMs;
+
+            els.statusText.innerText = "🟢 EN LÍNEA";
+
+            startVideo();
+        });
+
+        socket.on('transaction_complete', () => {
+            resetSession();
+            alert("Venta Completada");
+        });
+
+        // --- VIDEO PLAYER ---
+        function startVideo() {
+            if (Hls.isSupported()) {
+                if(hls) hls.destroy();
+                hls = new Hls({
+                    maxBufferLength: 2,
+                    liveSyncDurationCount: 1,
+                    manifestLoadingTimeOut: 5000
+                });
+                hls.loadSource(`${STREAM_URL}?t=${Date.now()}`); // Anti-cache
+                hls.attachMedia(els.video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => els.video.play());
+            } else if (els.video.canPlayType('application/vnd.apple.mpegurl')) {
+                els.video.src = `${STREAM_URL}?t=${Date.now()}`;
+                els.video.play();
+            }
+        }
+
+        function resetVideo() {
+            if(hls) hls.destroy();
+            els.video.pause();
+            els.video.src = "";
+            els.badgeLive.classList.remove('live');
+        }
+
+        // --- CART LOGIC ---
+        function addToCart(product) {
+            if(!currentSessionId) return; // Bloquear si no hay sesión
+            
+            cart.push(product);
+            updateCart();
+        }
+
+        function updateCart() {
+            els.cartList.innerHTML = "";
+            total = 0;
+            
+            cart.forEach(item => {
+                total += parseFloat(item.price);
+                const div = document.createElement('div');
+                div.className = "cart-item";
+                div.innerHTML = `<span>${item.name}</span> <span>Bs ${item.price}</span>`;
+                els.cartList.appendChild(div);
+            });
+
+            els.cartTotal.innerText = total.toFixed(2);
+            
+            if(total > 0) els.btnCheckout.classList.add('enabled');
+            else els.btnCheckout.classList.remove('enabled');
+        }
+
+        async function processCheckout() {
+            if(!currentSessionId || total === 0) return;
+
+            els.btnCheckout.innerText = "PROCESANDO...";
+            
+            try {
+                const res = await fetch(`${API_URL}/api/checkout`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        sessionId: currentSessionId,
+                        items: cart,
+                        total: total
+                    })
+                });
+                const json = await res.json();
+                if(!json.success) alert("Error: " + json.error);
+                
+            } catch(e) {
+                console.error(e);
+                alert("Error de red");
+            }
+            // Reset se maneja via socket 'transaction_complete'
+        }
+
+        function resetSession() {
+            currentSessionId = null;
+            cart = [];
+            total = 0;
+            
+            resetVideo();
+            
+            // UI Reset
+            els.overlayIdle.classList.remove('hidden');
+            els.overlayProc.classList.add('hidden');
+            els.userCard.classList.remove('active');
+            els.uName.innerText = "--";
+            els.uBalance.innerText = "0.00";
+            
+            els.latencyBox.style.display = 'none';
+            els.statusText.innerText = "Esperando Cliente";
+            
+            updateCart();
+            els.btnCheckout.innerText = "COBRAR";
+        }
+
+    </script>
+</body>
+</html>

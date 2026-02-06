@@ -1,0 +1,257 @@
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Box | Heladera Inteligente Vending</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --blue-dark: #223D73;
+            --blue-medium: #36ABD9;
+            --blue-light: #62C3D9;
+            --orange-light: #F2BF5E;
+            --orange-deep: #F2921D;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .bg-blue-dark { background-color: var(--blue-dark); }
+        .text-blue-dark { color: var(--blue-dark); }
+        .bg-blue-medium { background-color: var(--blue-medium); }
+        .text-blue-medium { color: var(--blue-medium); }
+        .bg-blue-light { background-color: var(--blue-light); }
+        .text-blue-light { color: var(--blue-light); }
+        .bg-orange-deep { background-color: var(--orange-deep); }
+        .hover-orange-light:hover { background-color: var(--orange-light); }
+        .border-blue-medium { border-color: var(--blue-medium); }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, var(--blue-dark) 0%, #1a2e56 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Navegación -->
+    <nav class="fixed w-full z-50 bg-blue-dark shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="bg-orange-deep p-2 rounded-lg">
+                        <i data-lucide="box" class="text-white w-6 h-6"></i>
+                    </div>
+                    <span class="text-2xl font-bold text-white tracking-tight">BLUE<span class="text-blue-light">BOX</span></span>
+                </div>
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="#inicio" class="text-white hover:text-blue-light transition">Inicio</a>
+                    <a href="#tecnologia" class="text-white hover:text-blue-light transition">Tecnología</a>
+                    <a href="#proceso" class="text-white hover:text-blue-light transition">Cómo Funciona</a>
+                    <a href="#contacto" class="bg-orange-deep text-white px-5 py-2 rounded-full font-semibold hover-orange-light transition transform hover:scale-105">Solicitar Demo</a>
+                </div>
+                <div class="md:hidden">
+                    <i data-lucide="menu" class="text-white w-8 h-8 cursor-pointer"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="inicio" class="hero-gradient pt-32 pb-20 px-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between">
+            <div class="md:w-1/2 text-white space-y-6">
+                <h1 class="text-4xl md:text-6xl font-extrabold leading-tight">
+                    El Futuro del Vending Escolar es <span class="text-orange-deep">Inteligente</span>
+                </h1>
+                <p class="text-lg text-blue-light max-w-lg">
+                    Automatizamos la venta de comida mediante visión artificial y tecnología NFC. Una experiencia de compra sin fricciones, rápida y segura para colegios.
+                </p>
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <a href="#proceso" class="bg-orange-deep text-white px-8 py-4 rounded-xl font-bold text-center hover-orange-light transition shadow-xl">Ver Funcionamiento</a>
+                    <a href="#tecnologia" class="border-2 border-blue-medium text-white px-8 py-4 rounded-xl font-bold text-center hover:bg-blue-medium transition">Nuestra Tech</a>
+                </div>
+            </div>
+            <div class="md:w-1/2 mt-12 md:mt-0 flex justify-center relative">
+                <div class="absolute -inset-4 bg-blue-medium opacity-20 blur-3xl rounded-full"></div>
+                <!-- Simulación de imagen de heladera -->
+                <div class="relative w-72 h-[450px] bg-white rounded-[2rem] border-8 border-gray-800 shadow-2xl overflow-hidden">
+                    <div class="absolute top-0 w-full h-1/2 bg-blue-light opacity-10"></div>
+                    <div class="p-6 flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-10">
+                            <div class="w-10 h-10 bg-blue-dark rounded-full flex items-center justify-center">
+                                <i data-lucide="camera" class="text-white w-5 h-5"></i>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[10px] font-bold text-blue-dark">STATUS</p>
+                                <p class="text-[10px] text-green-500 font-bold">ONLINE</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4 mt-auto">
+                            <div class="h-2 w-20 bg-gray-200 rounded"></div>
+                            <div class="h-8 w-full bg-blue-dark rounded-lg flex items-center justify-center">
+                                <span class="text-white text-[10px]">ESCANEANDO NFC...</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="h-16 bg-gray-100 rounded-lg"></div>
+                                <div class="h-16 bg-gray-100 rounded-lg"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Características (Tech Stack) -->
+    <section id="tecnologia" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-blue-dark mb-4">Tecnología de Vanguardia</h2>
+                <div class="w-24 h-1 bg-orange-deep mx-auto"></div>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Visión Artificial -->
+                <div class="p-8 bg-gray-50 rounded-3xl border border-gray-100 hover:border-blue-medium transition group">
+                    <div class="w-14 h-14 bg-blue-medium rounded-2xl flex items-center justify-center mb-6 text-white group-hover:scale-110 transition">
+                        <i data-lucide="eye" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-blue-dark mb-3">Visión Artificial</h3>
+                    <p class="text-gray-600">Reconocimiento y seguimiento de objetos mediante Google Cloud Vertex AI y cámaras Logitech de alta definición.</p>
+                </div>
+
+                <!-- NFC -->
+                <div class="p-8 bg-gray-50 rounded-3xl border border-gray-100 hover:border-blue-medium transition group">
+                    <div class="w-14 h-14 bg-orange-deep rounded-2xl flex items-center justify-center mb-6 text-white group-hover:scale-110 transition">
+                        <i data-lucide="contactless" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-blue-dark mb-3">Identificación NFC</h3>
+                    <p class="text-gray-600">Acceso instantáneo mediante tarjetas o pulseras estudiantiles con el lector PN532 de alta precisión.</p>
+                </div>
+
+                <!-- Cloud Sync -->
+                <div class="p-8 bg-gray-50 rounded-3xl border border-gray-100 hover:border-blue-medium transition group">
+                    <div class="w-14 h-14 bg-blue-dark rounded-2xl flex items-center justify-center mb-6 text-white group-hover:scale-110 transition">
+                        <i data-lucide="database" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-blue-dark mb-3">Firebase Realtime</h3>
+                    <p class="text-gray-600">Gestión de usuarios, saldos y transacciones en tiempo real con la robustez de la nube de Google.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Proceso de Compra -->
+    <section id="proceso" class="py-24 bg-blue-dark text-white overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-16">Flujo de Compra en <span class="text-orange-light">4 Pasos</span></h2>
+            
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="relative flex flex-col items-center text-center">
+                    <div class="w-16 h-16 rounded-full bg-blue-medium flex items-center justify-center text-2xl font-bold mb-6 z-10">1</div>
+                    <h4 class="font-bold mb-2">Identificación</h4>
+                    <p class="text-blue-light text-sm">El alumno acerca su NFC a la Blue Box.</p>
+                </div>
+                <div class="relative flex flex-col items-center text-center">
+                    <div class="w-16 h-16 rounded-full bg-blue-medium flex items-center justify-center text-2xl font-bold mb-6 z-10">2</div>
+                    <h4 class="font-bold mb-2">Validación</h4>
+                    <p class="text-blue-light text-sm">El sistema valida el saldo y libera el cerrojo electrónico.</p>
+                </div>
+                <div class="relative flex flex-col items-center text-center">
+                    <div class="w-16 h-16 rounded-full bg-blue-medium flex items-center justify-center text-2xl font-bold mb-6 z-10">3</div>
+                    <h4 class="font-bold mb-2">Selección</h4>
+                    <p class="text-blue-light text-sm">La cámara graba y reconoce los productos retirados.</p>
+                </div>
+                <div class="relative flex flex-col items-center text-center">
+                    <div class="w-16 h-16 rounded-full bg-blue-medium flex items-center justify-center text-2xl font-bold mb-6 z-10">4</div>
+                    <h4 class="font-bold mb-2">Débito</h4>
+                    <p class="text-blue-light text-sm">Análisis en la nube y descuento automático del saldo.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Hardware Section -->
+    <section class="py-24 bg-gray-50">
+        <div class="max-w-5xl mx-auto px-4">
+            <div class="bg-white rounded-[3rem] p-8 md:p-16 shadow-xl flex flex-col md:flex-row items-center gap-12">
+                <div class="md:w-1/2">
+                    <h2 class="text-3xl font-bold text-blue-dark mb-6">Hardware de Grado Industrial</h2>
+                    <ul class="space-y-4">
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="cpu" class="text-orange-deep w-6 h-6"></i>
+                            <span class="text-gray-700"><strong>Raspberry Pi 3 Model B:</strong> El cerebro central del sistema.</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="tablet" class="text-orange-deep w-6 h-6"></i>
+                            <span class="text-gray-700"><strong>Interfaz Tablet:</strong> Panel táctil intuitivo para el usuario.</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="video" class="text-orange-deep w-6 h-6"></i>
+                            <span class="text-gray-700"><strong>Webcam Logitech C930e:</strong> Captura HD para análisis AI.</span>
+                        </li>
+                        <li class="flex items-center space-x-3">
+                            <i data-lucide="lock" class="text-orange-deep w-6 h-6"></i>
+                            <span class="text-gray-700"><strong>Cerrojo Electrónico:</strong> Seguridad automatizada de alta respuesta.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="md:w-1/2 grid grid-cols-2 gap-4">
+                    <div class="aspect-square bg-blue-dark rounded-2xl flex items-center justify-center text-white">
+                        <i data-lucide="microchip" class="w-12 h-12 opacity-50"></i>
+                    </div>
+                    <div class="aspect-square bg-blue-medium rounded-2xl mt-8"></div>
+                    <div class="aspect-square bg-orange-light rounded-2xl -mt-8"></div>
+                    <div class="aspect-square bg-blue-light rounded-2xl"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contacto" class="bg-blue-dark pt-20 pb-10">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-12 mb-16">
+                <div class="col-span-2">
+                    <div class="flex items-center space-x-2 mb-6">
+                        <div class="bg-orange-deep p-2 rounded-lg">
+                            <i data-lucide="box" class="text-white w-6 h-6"></i>
+                        </div>
+                        <span class="text-2xl font-bold text-white tracking-tight">BLUE<span class="text-blue-light">BOX</span></span>
+                    </div>
+                    <p class="text-blue-light max-w-sm mb-6">Transformando la alimentación escolar con innovación y tecnología de punta. Blue Box es eficiencia, seguridad y modernidad.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-10 h-10 bg-blue-medium rounded-full flex items-center justify-center hover:bg-orange-deep transition"><i data-lucide="linkedin" class="text-white w-5 h-5"></i></a>
+                        <a href="#" class="w-10 h-10 bg-blue-medium rounded-full flex items-center justify-center hover:bg-orange-deep transition"><i data-lucide="instagram" class="text-white w-5 h-5"></i></a>
+                        <a href="#" class="w-10 h-10 bg-blue-medium rounded-full flex items-center justify-center hover:bg-orange-deep transition"><i data-lucide="mail" class="text-white w-5 h-5"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-6">Enlaces</h4>
+                    <ul class="space-y-4 text-blue-light">
+                        <li><a href="#inicio" class="hover:text-white transition">Inicio</a></li>
+                        <li><a href="#tecnologia" class="hover:text-white transition">Tecnología</a></li>
+                        <li><a href="#proceso" class="hover:text-white transition">Proceso</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-white font-bold mb-6">Contacto</h4>
+                    <p class="text-blue-light mb-2">info@bluebox-vending.com</p>
+                    <p class="text-blue-light">+54 11 1234 5678</p>
+                    <p class="text-blue-light">Tarija, Bolivia</p>
+                </div>
+            </div>
+            <div class="border-t border-blue-medium/30 pt-8 text-center text-blue-light text-sm">
+                <p>&copy; 2026 Blue Box - Heladera Inteligente Vending. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Inicializar iconos de Lucide
+        lucide.createIcons();
+    </script>
+</body>
+</html>
