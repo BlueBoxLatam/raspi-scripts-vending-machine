@@ -1,209 +1,356 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blue Box | Grabbie Operator v2</title>
-    
+
     <!-- Librerías Externas -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         /* --- IDENTIDAD VISUAL BLUE BOX --- */
         :root {
-            --primary: #223D73;       /* Azul Corporativo */
-            --secondary: #36ABD9;     /* Azul Acción */
-            --complementary: #62C3D9; /* Azul Claro */
-            --emphasis-1: #F2BF5E;    /* Naranja Claro (Alertas) */
-            --emphasis-2: #F2921D;    /* Naranja Intenso (Call to Action) */
+            --primary: #223D73;
+            /* Azul Corporativo */
+            --secondary: #36ABD9;
+            /* Azul Acción */
+            --complementary: #62C3D9;
+            /* Azul Claro */
+            --emphasis-1: #F2BF5E;
+            /* Naranja Claro (Alertas) */
+            --emphasis-2: #F2921D;
+            /* Naranja Intenso (Call to Action) */
             --dark-bg: #121212;
             --card-bg: #1E1E1E;
             --text-main: #FFFFFF;
             --text-muted: #AAAAAA;
         }
 
-        body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; 
-            background: var(--dark-bg); 
-            color: var(--text-main); 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
         }
-        
+
         /* --- PANEL IZQUIERDO: VIDEO & STATUS --- */
-        .left-panel { 
-            flex: 6; /* 60% ancho */
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            background: #0f1115; 
-            border-right: 1px solid #333; 
+        .left-panel {
+            flex: 6;
+            /* 60% ancho */
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background: #0f1115;
+            border-right: 1px solid #333;
         }
-        
-        header { display: flex; align-items: center; margin-bottom: 20px; }
-        header h2 { margin: 0; font-weight: 700; letter-spacing: 1px; }
-        
+
+        header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        header h2 {
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
         /* Contenedor de Video 16:9 */
         .video-wrapper {
             width: 100%;
             position: relative;
-            padding-top: 56.25%; /* Aspect Ratio 16:9 */
+            padding-top: 56.25%;
+            /* Aspect Ratio 16:9 */
             background: #000;
             border-radius: 12px;
             overflow: hidden;
             border: 2px solid var(--primary);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
         }
 
         .video-inner {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
 
-        video { 
-            width: 100%; height: 100%; object-fit: cover; 
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         /* Overlays (Capas superpuestas) */
         .overlay {
-            position: absolute; inset: 0;
-            display: flex; flex-direction: column; 
-            justify-content: center; align-items: center;
-            background: rgba(18, 18, 18, 0.96); 
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(18, 18, 18, 0.96);
             z-index: 10;
             transition: opacity 0.3s ease;
         }
-        .overlay.hidden { opacity: 0; pointer-events: none; }
-        
-        /* Estilos específicos Overlay Standby */
-        .standby-icon { 
-            color: var(--complementary); 
-            font-size: 5rem; 
-            margin-bottom: 20px; 
-            animation: breathe 4s infinite ease-in-out; 
+
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
-        @keyframes breathe { 
-            0%, 100% { opacity: 0.6; transform: scale(0.95); } 
-            50% { opacity: 1; transform: scale(1.05); } 
+
+        /* Estilos específicos Overlay Standby */
+        .standby-icon {
+            color: var(--complementary);
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: breathe 4s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                opacity: 0.6;
+                transform: scale(0.95);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
         }
 
         /* Estilos específicos Overlay Proceso */
         .spinner {
-            width: 50px; height: 50px; 
-            border: 5px solid rgba(255,255,255,0.1); 
-            border-top-color: var(--emphasis-2); 
-            border-radius: 50%; 
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--emphasis-2);
+            border-radius: 50%;
             animation: spin 1s infinite linear;
             margin-bottom: 20px;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         /* Badges de Estado */
         .status-badge {
-            position: absolute; top: 20px; right: 20px;
-            padding: 6px 14px; border-radius: 6px; 
-            font-weight: 700; font-size: 0.85rem; letter-spacing: 0.5px;
-            z-index: 20; display: none; text-transform: uppercase;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            z-index: 20;
+            display: none;
+            text-transform: uppercase;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
         }
-        .bg-live { background: #d32f2f; color: white; animation: pulse 2s infinite; }
-        .bg-standby { background: var(--primary); color: var(--complementary); border: 1px solid var(--secondary); }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+
+        .bg-live {
+            background: #d32f2f;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .bg-standby {
+            background: var(--primary);
+            color: var(--complementary);
+            border: 1px solid var(--secondary);
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
 
         /* Información del Sistema (Debajo del video) */
         .sys-info {
             margin-top: 20px;
-            display: flex; justify-content: space-between;
-            color: var(--text-muted); font-size: 0.9rem;
-            background: var(--card-bg); padding: 15px; border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
         }
 
         /* --- PANEL DERECHO: INTERACCIÓN --- */
-        .right-panel { 
-            flex: 4; /* 40% ancho */
-            padding: 25px; 
-            display: flex; flex-direction: column; 
-            background: var(--card-bg); 
-            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+        .right-panel {
+            flex: 4;
+            /* 40% ancho */
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
         }
 
         /* Tarjeta Usuario */
-        .user-card { 
+        .user-card {
             background: linear-gradient(135deg, var(--primary) 0%, #1a2e55 100%);
-            padding: 20px; border-radius: 10px; margin-bottom: 20px; 
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
             border-left: 5px solid transparent;
-            opacity: 0.6; transition: all 0.3s;
+            opacity: 0.6;
+            transition: all 0.3s;
         }
-        .user-card.active { 
-            opacity: 1; 
-            border-left-color: var(--emphasis-2); 
+
+        .user-card.active {
+            opacity: 1;
+            border-left-color: var(--emphasis-2);
             box-shadow: 0 4px 15px rgba(34, 61, 115, 0.4);
         }
-        
+
         /* Grid de Productos */
         #productsGrid {
-            flex: 1; overflow-y: auto;
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px; margin-bottom: 20px;
-            padding-right: 5px; /* Scrollbar space */
+            flex: 1;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-right: 5px;
+            /* Scrollbar space */
         }
-        
-        .product-btn { 
-            background: #2A2A2A; border: 1px solid #333; 
-            border-radius: 8px; padding: 15px 10px; 
-            cursor: pointer; text-align: center;
-            transition: all 0.2s; display: flex; flex-direction: column; justify-content: center;
+
+        .product-btn {
+            background: #2A2A2A;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
             min-height: 80px;
         }
-        .product-btn:hover { 
-            background: #333; border-color: var(--secondary); 
+
+        .product-btn:hover {
+            background: #333;
+            border-color: var(--secondary);
             transform: translateY(-2px);
         }
-        .product-name { font-weight: 600; margin-bottom: 5px; font-size: 0.95rem;}
-        .product-price { color: var(--complementary); font-size: 0.9rem; }
+
+        .product-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+        }
+
+        .product-price {
+            color: var(--complementary);
+            font-size: 0.9rem;
+        }
 
         /* Carrito */
         .cart-section {
-            background: #111; padding: 20px; border-radius: 10px;
+            background: #111;
+            padding: 20px;
+            border-radius: 10px;
         }
+
         .cart-list {
-            max-height: 150px; overflow-y: auto; margin-bottom: 15px;
-            font-size: 0.9rem; color: #ccc;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #ccc;
         }
-        .cart-item { display: flex; justify-content: space-between; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid #222; }
-        
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #222;
+        }
+
         .total-row {
-            display: flex; justify-content: space-between; 
-            font-size: 1.4em; font-weight: bold; margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 15px;
             color: var(--text-main);
         }
 
-        .checkout-btn { 
-            width: 100%; padding: 18px; 
-            background: var(--emphasis-2); color: white; 
-            border: none; border-radius: 8px; 
-            font-weight: 800; font-size: 1.1rem; letter-spacing: 1px;
-            cursor: pointer; opacity: 0.5; pointer-events: none; 
-            transition: all 0.3s; text-transform: uppercase;
+        .checkout-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--emphasis-2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            opacity: 0.5;
+            pointer-events: none;
+            transition: all 0.3s;
+            text-transform: uppercase;
         }
-        .checkout-btn.enabled { 
-            opacity: 1; pointer-events: all; 
+
+        .checkout-btn.enabled {
+            opacity: 1;
+            pointer-events: all;
             box-shadow: 0 4px 15px rgba(242, 146, 29, 0.4);
         }
-        .checkout-btn:hover { background: #ff9f2a; }
+
+        .checkout-btn:hover {
+            background: #ff9f2a;
+        }
 
         /* Scrollbar Personalizado */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #111; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
 
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
     </style>
 </head>
+
 <body>
 
     <!-- === PANEL IZQUIERDO === -->
@@ -215,11 +362,11 @@
                 <small style="color: var(--text-muted); letter-spacing: 2px;">VENDING OPERATOR v2</small>
             </div>
         </header>
-        
+
         <div class="video-wrapper">
             <div class="video-inner">
                 <video id="video" muted playsinline></video>
-                
+
                 <!-- Badges -->
                 <div id="badgeLive" class="status-badge bg-live"><i class="fas fa-circle fa-xs"></i> EN VIVO</div>
                 <div id="badgeStandby" class="status-badge bg-standby"><i class="fas fa-leaf"></i> ECO MODE</div>
@@ -228,7 +375,8 @@
                 <div id="overlayStandby" class="overlay">
                     <i class="fas fa-power-off standby-icon"></i>
                     <h2 style="margin:0;">Modo Ahorro de Energía</h2>
-                    <p style="color: var(--text-muted); margin-top:10px;">Cámara en espera. Pase tarjeta para activar.</p>
+                    <p style="color: var(--text-muted); margin-top:10px;">Cámara en espera. Pase tarjeta para activar.
+                    </p>
                 </div>
 
                 <!-- OVERLAY 2: PROCESANDO (Handshake) -->
@@ -242,11 +390,11 @@
 
         <div class="sys-info">
             <div>
-                <i class="fas fa-server" style="color: var(--primary);"></i> 
+                <i class="fas fa-server" style="color: var(--primary);"></i>
                 Estado: <span id="sysStatus" style="color: var(--complementary); font-weight:bold;">Conectado</span>
             </div>
             <div id="latencyBox" style="display:none">
-                <i class="fas fa-tachometer-alt" style="color: var(--emphasis-2);"></i> 
+                <i class="fas fa-tachometer-alt" style="color: var(--emphasis-2);"></i>
                 Latencia: <span id="latVal" style="color:white; font-weight:bold;">--</span> ms
             </div>
         </div>
@@ -264,7 +412,8 @@
                 </div>
                 <div style="text-align:right;">
                     <small style="color:var(--text-muted);">Saldo</small>
-                    <div style="font-size:1.5em; color:var(--emphasis-1); font-weight:bold;">Bs <span id="uBalance">0.00</span></div>
+                    <div style="font-size:1.5em; color:var(--emphasis-1); font-weight:bold;">Bs <span
+                            id="uBalance">0.00</span></div>
                 </div>
             </div>
         </div>
@@ -283,12 +432,12 @@
             <div id="cartList" class="cart-list">
                 <div style="text-align:center; padding-top:20px; color:#444;">Carrito Vacío</div>
             </div>
-            
+
             <div class="total-row">
                 <span>Total</span>
                 <span>Bs <span id="cartTotal">0.00</span></span>
             </div>
-            
+
             <button id="btnCheckout" class="checkout-btn" onclick="processCheckout()">
                 COBRAR <i class="fas fa-chevron-right" style="margin-left:10px;"></i>
             </button>
@@ -298,11 +447,14 @@
     <script>
         // CONFIGURACIÓN
         // IMPORTANTE: Cambiar esta URL si no estás probando en localhost
-        const API_URL = window.location.protocol + '//' + window.location.hostname + ':3000'; 
-        const STREAM_URL = API_URL + "/hls/stream.m3u8";
-        
-        const socket = io(API_URL);
-        
+        // CONFIGURACIÓN
+        const API_URL = "https://api.grabbie.one";
+        const STREAM_URL = "https://api.grabbie.one/hls/stream.m3u8";
+
+        const socket = io(API_URL, {
+            transports: ['websocket', 'polling']
+        });
+
         // Variables de Estado
         let hls = null;
         let currentSessionId = null;
@@ -343,7 +495,7 @@
         socket.on('stream_status_update', (data) => {
             console.log(`📺 Estado Cámara: ${data.status.toUpperCase()}`);
             isStreamOnline = (data.status === 'online');
-            
+
             if (isStreamOnline) {
                 // Estado: CÁMARA ENCENDIDA
                 els.overlayStandby.classList.add('hidden'); // Ocultar Standby
@@ -351,9 +503,9 @@
                 els.badgeLive.style.display = 'none'; // Aún no mostramos "EN VIVO" real hasta verificar cliente
                 els.sysStatus.innerText = "Cámara Activa (Esperando cliente)";
                 els.sysStatus.style.color = "var(--secondary)";
-                
+
                 // Intentar precargar HLS para minimizar latencia
-                if (!hls) initHlsPlayer(); 
+                if (!hls) initHlsPlayer();
             } else {
                 // Estado: CÁMARA APAGADA (Ahorro)
                 els.overlayStandby.classList.remove('hidden');
@@ -361,7 +513,7 @@
                 els.badgeStandby.style.display = 'block';
                 els.sysStatus.innerText = "Modo ECO (Standby)";
                 els.sysStatus.style.color = "#666";
-                
+
                 // Detener reproductor para ahorrar recursos del navegador
                 destroyHlsPlayer();
             }
@@ -370,14 +522,14 @@
         // 2. NUEVO CLIENTE DETECTADO (NFC)
         socket.on('nfc_pending_video', (data) => {
             console.log("💳 NFC Detectado:", data.studentName);
-            
+
             // Mostrar UI de carga inmediatamente
             // Si la cámara ya estaba online, esto será casi imperceptible
             if (!isStreamOnline) {
                 els.overlayStandby.classList.add('hidden');
                 els.overlayProc.classList.remove('hidden');
             }
-            
+
             // Preparar tarjeta de usuario (estado "cargando")
             updateUserUI(data.studentName, "...", "...");
         });
@@ -386,11 +538,11 @@
         socket.on('student_scanned', (data) => {
             console.log("✅ Sesión Confirmada:", data.sessionId);
             currentSessionId = data.sessionId;
-            
+
             // Limpiar overlays
             els.overlayProc.classList.add('hidden');
             els.overlayStandby.classList.add('hidden');
-            
+
             // Mostrar badges
             els.badgeLive.style.display = 'block';
             els.latencyBox.style.display = 'block';
@@ -398,9 +550,9 @@
 
             // Datos Usuario
             updateUserUI(data.name, data.balance, data.uid);
-            
+
             // Asegurar video
-            if(!hls) initHlsPlayer();
+            if (!hls) initHlsPlayer();
             else els.video.play().catch(e => console.log("Autoplay:", e));
         });
 
@@ -420,10 +572,10 @@
                     enableWorker: true,
                     manifestLoadingTimeOut: 5000,
                 });
-                
-                hls.loadSource(STREAM_URL);
+
+                hls.loadSource(`${STREAM_URL}?t=${Date.now()}`);
                 hls.attachMedia(els.video);
-                
+
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
                     els.video.play().catch(e => console.warn("Autoplay bloqueado por navegador"));
                 });
@@ -450,7 +602,7 @@
         }
 
         function destroyHlsPlayer() {
-            if(hls) {
+            if (hls) {
                 console.log("⏹️ Deteniendo HLS");
                 hls.destroy();
                 hls = null;
@@ -469,7 +621,7 @@
         }
 
         function renderGrid() {
-            if(products.length === 0) {
+            if (products.length === 0) {
                 els.productsGrid.innerHTML = `<div style="padding:20px;">No hay productos disponibles.</div>`;
                 return;
             }
@@ -486,7 +638,7 @@
                 // Efecto visual de "error" si intenta añadir sin usuario
                 els.userCard.style.transform = "translateX(5px)";
                 setTimeout(() => els.userCard.style.transform = "translateX(0)", 100);
-                return; 
+                return;
             }
             cart.push(p);
             updateCartUI();
@@ -499,7 +651,7 @@
 
         function updateCartUI() {
             let total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
-            
+
             if (cart.length === 0) {
                 els.cartList.innerHTML = `<div style="text-align:center; padding-top:10px; color:#444;">Carrito Vacío</div>`;
                 els.btnCheckout.classList.remove('enabled');
@@ -515,7 +667,7 @@
                 `).join('');
                 els.btnCheckout.classList.add('enabled');
             }
-            
+
             els.cartTotal.innerText = total.toFixed(2);
         }
 
@@ -530,40 +682,40 @@
             currentSessionId = null;
             cart = [];
             updateCartUI();
-            
+
             // Reset UI Usuario
             els.userCard.classList.remove('active');
             els.uName.innerText = "--";
             els.uBalance.innerText = "0.00";
             els.uId.innerText = "ID: --";
-            
+
             els.badgeLive.style.display = 'none';
             els.latencyBox.style.display = 'none';
-            
+
             // Nota: No cortamos el video aquí. Si el recreo sigue, 
             // la cámara sigue "Online" (stream_status_update no cambia) 
             // esperando al siguiente alumno.
         }
 
         async function processCheckout() {
-            if(!currentSessionId || cart.length === 0) return;
+            if (!currentSessionId || cart.length === 0) return;
 
             els.btnCheckout.innerText = "PROCESANDO...";
             els.btnCheckout.style.opacity = "0.7";
-            
+
             let total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
-            
+
             try {
                 const res = await fetch(`${API_URL}/api/checkout`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionId: currentSessionId, items: cart, total })
                 });
-                
+
                 const data = await res.json();
-                if(!data.success) alert("Error: " + data.error);
-                
-            } catch(e) {
+                if (!data.success) alert("Error: " + data.error);
+
+            } catch (e) {
                 console.error(e);
                 alert("Error de conexión al cobrar.");
             } finally {
@@ -572,4 +724,5 @@
         }
     </script>
 </body>
+
 </html>
