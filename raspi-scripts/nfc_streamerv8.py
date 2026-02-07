@@ -121,8 +121,8 @@ def start_ffmpeg():
         '-c:v', 'libx264',           
         '-preset', 'ultrafast',      
         '-tune', 'zerolatency',      
-        '-g', '30',                  
-        '-b:v', '600k',              
+        '-g', '8',                   # Keyframe cada 0.5s (8 frames / 15 fps)
+        '-keyint_min', '8',              
         '-bufsize', '600k',          
         '-f', 'mpegts', 
         SRT_URL

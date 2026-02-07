@@ -567,8 +567,9 @@
             if (Hls.isSupported()) {
                 console.log("▶️ Iniciando HLS...");
                 hls = new Hls({
-                    maxBufferLength: 2,        // Buffer corto para baja latencia
-                    liveSyncDurationCount: 1,  // Mantenerse cerca del borde "live"
+                    maxBufferLength: 1,        // Buffer ultra-corto (1s)
+                    liveSyncDurationCount: 1,  // Mantenerse en el borde vivo (1 segmento)
+                    highBufferWatchdogPeriod: 1, // Limpiar buffer viejo rápido
                     enableWorker: true,
                     manifestLoadingTimeOut: 5000,
                 });
@@ -719,7 +720,7 @@
                 console.error(e);
                 alert("Error de conexión al cobrar.");
             } finally {
-                els.btnCheckout.innerText = 'COBRAR <i class="fas fa-chevron-right" style="margin-left:10px;"></i>';
+                els.btnCheckout.innerHTML = 'COBRAR <i class="fas fa-chevron-right" style="margin-left:10px;"></i>';
             }
         }
     </script>

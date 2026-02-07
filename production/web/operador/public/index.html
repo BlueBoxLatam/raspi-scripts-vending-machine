@@ -1,483 +1,728 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <title>Blue Box | Grabbie Operator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blue Box | Grabbie Operator v2</title>
+
+    <!-- Librerías Externas -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
+        /* --- IDENTIDAD VISUAL BLUE BOX --- */
         :root {
             --primary: #223D73;
+            /* Azul Corporativo */
             --secondary: #36ABD9;
+            /* Azul Acción */
             --complementary: #62C3D9;
+            /* Azul Claro */
             --emphasis-1: #F2BF5E;
+            /* Naranja Claro (Alertas) */
             --emphasis-2: #F2921D;
+            /* Naranja Intenso (Call to Action) */
             --dark-bg: #121212;
             --card-bg: #1E1E1E;
             --text-main: #FFFFFF;
             --text-muted: #AAAAAA;
         }
 
-        body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; 
-            background: var(--dark-bg); 
-            color: var(--text-main); 
-            margin: 0; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
         }
-        
-        /* --- LEFT PANEL: VIDEO & STATUS --- */
-        .left-panel { 
-            flex: 2; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            border-right: 1px solid #333; 
-            background: radial-gradient(circle at center, #1a253a 0%, #121212 100%);
+
+        /* --- PANEL IZQUIERDO: VIDEO & STATUS --- */
+        .left-panel {
+            flex: 6;
+            /* 60% ancho */
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            background: #0f1115;
+            border-right: 1px solid #333;
         }
-        
-        .header-brand {
+
+        header {
             display: flex;
             align-items: center;
             margin-bottom: 20px;
         }
-        .header-brand h1 {
+
+        header h2 {
             margin: 0;
-            color: var(--secondary);
-            font-size: 1.5rem;
+            font-weight: 700;
             letter-spacing: 1px;
         }
-        .header-brand span { color: var(--emphasis-2); }
 
-        .video-container { 
-            width: 100%; 
-            max-width: 900px; 
-            aspect-ratio: 16/9; 
-            background: #000; 
-            border: 2px solid var(--secondary); 
-            border-radius: 12px; 
-            overflow: hidden; 
-            position: relative; 
-            box-shadow: 0 0 20px rgba(54, 171, 217, 0.1);
-            margin: 0 auto;
+        /* Contenedor de Video 16:9 */
+        .video-wrapper {
+            width: 100%;
+            position: relative;
+            padding-top: 56.25%;
+            /* Aspect Ratio 16:9 */
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--primary);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
         }
-        
-        video { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* Overlays */
+
+        .video-inner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Overlays (Capas superpuestas) */
         .overlay {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: rgba(18, 18, 18, 0.9);
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(18, 18, 18, 0.96);
             z-index: 10;
             transition: opacity 0.3s ease;
         }
-        
-        .overlay.hidden { opacity: 0; pointer-events: none; }
-        
+
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Estilos específicos Overlay Standby */
+        .standby-icon {
+            color: var(--complementary);
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: breathe 4s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                opacity: 0.6;
+                transform: scale(0.95);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+
+        /* Estilos específicos Overlay Proceso */
         .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: var(--emphasis-2);
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--emphasis-2);
             border-radius: 50%;
-            width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            animation: spin 1s infinite linear;
+            margin-bottom: 20px;
         }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Badges de Estado */
         .status-badge {
-            position: absolute; top: 15px; right: 15px;
-            background: #cc0000; color: white;
-            padding: 4px 12px; border-radius: 4px;
-            font-weight: bold; font-size: 0.8rem;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            z-index: 20;
             display: none;
-            box-shadow: 0 0 10px rgba(255,0,0,0.5);
+            text-transform: uppercase;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
         }
-        .status-badge.live { display: block; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        .latency-stat {
-            margin-top: 15px;
-            font-family: monospace;
+        .bg-live {
+            background: #d32f2f;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .bg-standby {
+            background: var(--primary);
+            color: var(--complementary);
+            border: 1px solid var(--secondary);
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Información del Sistema (Debajo del video) */
+        .sys-info {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
             color: var(--text-muted);
             font-size: 0.9rem;
-            text-align: center;
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
         }
-        .latency-value { color: var(--emphasis-1); font-weight: bold; }
 
-        /* --- RIGHT PANEL: POS --- */
-        .right-panel { 
-            flex: 1; 
-            padding: 25px; 
-            display: flex; 
-            flex-direction: column; 
-            background: var(--card-bg); 
-            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+        /* --- PANEL DERECHO: INTERACCIÓN --- */
+        .right-panel {
+            flex: 4;
+            /* 40% ancho */
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
         }
-        
-        /* User Card */
+
+        /* Tarjeta Usuario */
         .user-card {
-            background: linear-gradient(135deg, var(--primary) 0%, #162447 100%);
-            padding: 20px; border-radius: 12px; margin-bottom: 25px;
-            border-left: 5px solid var(--secondary);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            opacity: 0.4; transition: opacity 0.3s;
+            background: linear-gradient(135deg, var(--primary) 0%, #1a2e55 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid transparent;
+            opacity: 0.6;
+            transition: all 0.3s;
         }
-        .user-card.active { opacity: 1; border-left-color: var(--emphasis-2); }
-        
-        .user-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--complementary); margin-bottom: 5px; }
-        .user-name { font-size: 1.8rem; font-weight: 700; margin: 0; color: white; }
-        .user-balance { font-size: 1.4rem; color: var(--emphasis-1); margin-top: 5px; }
 
-        /* Products Grid */
-        .products-section-title { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        
-        .products-grid { 
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; 
-            overflow-y: auto; flex-grow: 1; 
-            padding-right: 5px; /* Scrollbar space */
+        .user-card.active {
+            opacity: 1;
+            border-left-color: var(--emphasis-2);
+            box-shadow: 0 4px 15px rgba(34, 61, 115, 0.4);
         }
-        
+
+        /* Grid de Productos */
+        #productsGrid {
+            flex: 1;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-right: 5px;
+            /* Scrollbar space */
+        }
+
         .product-btn {
-            background: #2A2A2A; border: 1px solid #333;
-            padding: 15px; border-radius: 8px; 
-            color: white; cursor: pointer; 
-            text-align: left; 
+            background: #2A2A2A;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px 10px;
+            cursor: pointer;
+            text-align: center;
             transition: all 0.2s;
-            display: flex; flex-direction: column; justify-content: space-between;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
             min-height: 80px;
         }
-        .product-btn:hover { background: #333; border-color: var(--secondary); transform: translateY(-2px); }
-        .product-btn:active { transform: scale(0.98); }
-        
-        .p-name { font-weight: 600; font-size: 1rem; margin-bottom: 5px; }
-        .p-price { color: var(--complementary); font-weight: bold; }
-        .p-img { width: 100%; height: 60px; object-fit: contain; margin-bottom: 5px; display: none; } /* Optional if we add images */
 
-        /* Cart */
-        .cart-panel {
-            background: #151515; border-radius: 12px; padding: 20px;
-            margin-top: 25px;
-            display: flex; flex-direction: column;
-            border: 1px solid #333;
+        .product-btn:hover {
+            background: #333;
+            border-color: var(--secondary);
+            transform: translateY(-2px);
         }
-        
-        .cart-items { flex-grow: 1; max-height: 150px; overflow-y: auto; margin-bottom: 15px; }
-        .cart-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #222; font-size: 0.9rem; }
-        .cart-item span:last-child { color: var(--text-muted); }
 
-        .cart-total { display: flex; justify-content: space-between; font-size: 1.3rem; font-weight: bold; margin-bottom: 15px; color: white; }
-        
+        .product-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+        }
+
+        .product-price {
+            color: var(--complementary);
+            font-size: 0.9rem;
+        }
+
+        /* Carrito */
+        .cart-section {
+            background: #111;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .cart-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #222;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: var(--text-main);
+        }
+
         .checkout-btn {
-            background: var(--emphasis-2); color: white; border: none; padding: 15px; 
-            width: 100%; border-radius: 8px; font-size: 1.1rem; font-weight: bold; 
-            cursor: pointer; opacity: 0.5; pointer-events: none;
-            transition: background 0.2s;
-            text-transform: uppercase; letter-spacing: 1px;
+            width: 100%;
+            padding: 18px;
+            background: var(--emphasis-2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            opacity: 0.5;
+            pointer-events: none;
+            transition: all 0.3s;
+            text-transform: uppercase;
         }
-        .checkout-btn.enabled { opacity: 1; pointer-events: all; }
-        .checkout-btn:hover { background: #d67d10; }
 
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #121212; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--secondary); }
+        .checkout-btn.enabled {
+            opacity: 1;
+            pointer-events: all;
+            box-shadow: 0 4px 15px rgba(242, 146, 29, 0.4);
+        }
 
+        .checkout-btn:hover {
+            background: #ff9f2a;
+        }
+
+        /* Scrollbar Personalizado */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
     </style>
 </head>
+
 <body>
 
-    <!-- LEFT PANEL -->
+    <!-- === PANEL IZQUIERDO === -->
     <div class="left-panel">
-        <div class="header-brand">
-            <h1>BLUE <span>BOX</span> <small style="font-size:0.6em; color:#666;">| OPERATOR v2.0</small></h1>
+        <header>
+            <i class="fas fa-cube fa-2x" style="color: var(--secondary); margin-right: 15px;"></i>
+            <div>
+                <h2 style="color: var(--secondary);">BLUE <span style="color:white;">BOX</span></h2>
+                <small style="color: var(--text-muted); letter-spacing: 2px;">VENDING OPERATOR v2</small>
+            </div>
+        </header>
+
+        <div class="video-wrapper">
+            <div class="video-inner">
+                <video id="video" muted playsinline></video>
+
+                <!-- Badges -->
+                <div id="badgeLive" class="status-badge bg-live"><i class="fas fa-circle fa-xs"></i> EN VIVO</div>
+                <div id="badgeStandby" class="status-badge bg-standby"><i class="fas fa-leaf"></i> ECO MODE</div>
+
+                <!-- OVERLAY 1: STANDBY (Ahorro de energía) -->
+                <div id="overlayStandby" class="overlay">
+                    <i class="fas fa-power-off standby-icon"></i>
+                    <h2 style="margin:0;">Modo Ahorro de Energía</h2>
+                    <p style="color: var(--text-muted); margin-top:10px;">Cámara en espera. Pase tarjeta para activar.
+                    </p>
+                </div>
+
+                <!-- OVERLAY 2: PROCESANDO (Handshake) -->
+                <div id="overlayProc" class="overlay hidden">
+                    <div class="spinner"></div>
+                    <h3 style="color: var(--emphasis-1);">Identificando...</h3>
+                    <p id="procText" style="color: var(--text-muted); font-size:0.9rem;">Sincronizando feed de video</p>
+                </div>
+            </div>
         </div>
 
-        <div class="video-container">
-            <video id="video" muted playsinline></video>
-            
-            <!-- Badge LIVE -->
-            <div id="badgeLive" class="status-badge">LIVE FEED</div>
-
-            <!-- Idle Overlay -->
-            <div id="overlayIdle" class="overlay">
-                <i class="fas fa-satellite-dish" style="font-size: 3rem; color: var(--secondary); margin-bottom: 20px;"></i>
-                <h2 style="margin:0;">Sistema Listo</h2>
-                <p style="color: #666;">Esperando tarjeta NFC...</p>
+        <div class="sys-info">
+            <div>
+                <i class="fas fa-server" style="color: var(--primary);"></i>
+                Estado: <span id="sysStatus" style="color: var(--complementary); font-weight:bold;">Conectado</span>
             </div>
-
-            <!-- Processing Overlay -->
-            <div id="overlayProcessing" class="overlay hidden">
-                <div class="spinner"></div>
-                <h2 style="color: var(--emphasis-2);">Estableciendo Video</h2>
-                <p id="procText" style="color: #ccc;">Validando seguridad...</p>
+            <div id="latencyBox" style="display:none">
+                <i class="fas fa-tachometer-alt" style="color: var(--emphasis-2);"></i>
+                Latencia: <span id="latVal" style="color:white; font-weight:bold;">--</span> ms
             </div>
-        </div>
-
-        <div class="latency-stat">
-            Estado: <span id="statusText">Conectado</span> 
-            <span id="latencyBox" style="display:none; margin-left:15px;">
-                | Latencia HLS: <span id="latencyValue" class="latency-value">--</span> ms
-            </span>
         </div>
     </div>
 
-    <!-- RIGHT PANEL -->
+    <!-- === PANEL DERECHO === -->
     <div class="right-panel">
-        <!-- Student Info -->
+        <!-- Tarjeta Usuario -->
         <div id="userCard" class="user-card">
-            <div class="user-label">Cliente Actual</div>
-            <h3 id="uName" class="user-name">--</h3>
-            <div class="user-balance">Bs <span id="uBalance">0.00</span></div>
-        </div>
-
-        <div class="products-section-title">PRODUCTOS DISPONIBLES</div>
-        
-        <!-- Dynamic Grid -->
-        <div id="productsGrid" class="products-grid">
-            <div style="text-align:center; padding:20px; color:#666;">Cargando productos...</div>
-        </div>
-
-        <!-- Cart -->
-        <div class="cart-panel">
-            <div id="cartList" class="cart-items">
-                <div style="text-align:center; padding:10px; color:#444;">Carrito Vacío</div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                    <small style="color:var(--complementary); font-weight:bold;">CLIENTE ACTUAL</small>
+                    <h2 id="uName" style="margin:5px 0; font-size:1.6rem;">--</h2>
+                    <small id="uId" style="color:var(--text-muted);">ID: --</small>
+                </div>
+                <div style="text-align:right;">
+                    <small style="color:var(--text-muted);">Saldo</small>
+                    <div style="font-size:1.5em; color:var(--emphasis-1); font-weight:bold;">Bs <span
+                            id="uBalance">0.00</span></div>
+                </div>
             </div>
-            
-            <div class="cart-total">
-                <span>TOTAL</span>
+        </div>
+
+        <!-- Grid Productos -->
+        <h4 style="margin:0 0 10px 0; color:var(--text-muted);">SELECCIONAR PRODUCTOS</h4>
+        <div id="productsGrid">
+            <!-- Se llena con JS -->
+            <div style="grid-column: 1/-1; text-align:center; padding:20px; color:#444;">
+                <i class="fas fa-circle-notch fa-spin"></i> Cargando inventario...
+            </div>
+        </div>
+
+        <!-- Carrito y Checkout -->
+        <div class="cart-section">
+            <div id="cartList" class="cart-list">
+                <div style="text-align:center; padding-top:20px; color:#444;">Carrito Vacío</div>
+            </div>
+
+            <div class="total-row">
+                <span>Total</span>
                 <span>Bs <span id="cartTotal">0.00</span></span>
             </div>
-            
+
             <button id="btnCheckout" class="checkout-btn" onclick="processCheckout()">
-                <i class="fas fa-check-circle"></i> COBRAR
+                COBRAR <i class="fas fa-chevron-right" style="margin-left:10px;"></i>
             </button>
         </div>
     </div>
 
     <script>
-        // --- 1. CONFIGURACIÓN ---
-        // Actualizado para usar el dominio seguro vía Cloudflare + Nginx
+        // CONFIGURACIÓN
+        // IMPORTANTE: Cambiar esta URL si no estás probando en localhost
+        // CONFIGURACIÓN
         const API_URL = "https://api.grabbie.one";
         const STREAM_URL = "https://api.grabbie.one/hls/stream.m3u8";
+
         const socket = io(API_URL, {
             transports: ['websocket', 'polling']
         });
+
+        // Variables de Estado
+        let hls = null;
         let currentSessionId = null;
         let cart = [];
-        let total = 0;
-        let hls = null;
         let products = [];
+        let isStreamOnline = false;
 
-        // DOM ELEMENTS
+        // Referencias al DOM
         const els = {
             video: document.getElementById('video'),
-            overlayIdle: document.getElementById('overlayIdle'),
-            overlayProc: document.getElementById('overlayProcessing'),
+            overlayStandby: document.getElementById('overlayStandby'),
+            overlayProc: document.getElementById('overlayProc'),
             badgeLive: document.getElementById('badgeLive'),
-            statusText: document.getElementById('statusText'),
-            latencyBox: document.getElementById('latencyBox'),
-            latencyValue: document.getElementById('latencyValue'),
-            userCard: document.getElementById('userCard'),
+            badgeStandby: document.getElementById('badgeStandby'),
+            sysStatus: document.getElementById('sysStatus'),
             uName: document.getElementById('uName'),
+            uId: document.getElementById('uId'),
             uBalance: document.getElementById('uBalance'),
-            grid: document.getElementById('productsGrid'),
+            userCard: document.getElementById('userCard'),
+            productsGrid: document.getElementById('productsGrid'),
             cartList: document.getElementById('cartList'),
             cartTotal: document.getElementById('cartTotal'),
-            btnCheckout: document.getElementById('btnCheckout')
+            btnCheckout: document.getElementById('btnCheckout'),
+            latencyBox: document.getElementById('latencyBox'),
+            latVal: document.getElementById('latVal')
         };
 
-        // --- INIT ---
+        // --- INICIALIZACIÓN ---
         window.onload = () => {
-            fetchProducts();
+            console.log("🚀 Iniciando Blue Box Operator...");
             socket.emit('join_operator');
+            fetchProducts();
         };
 
-        async function fetchProducts() {
-            try {
-                console.log("Conectando a inventario en:", `${API_URL}/api/products`);
-                const res = await fetch(`${API_URL}/api/products`);
-                if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
-                products = await res.json();
-                renderProducts();
-            } catch (e) {
-                console.error("Fetch Error:", e);
-                els.grid.innerHTML = `
-                    <div style="grid-column: span 2; color: #ff6b6b; text-align: center; padding: 20px; border: 1px dashed #ff6b6b; border-radius: 8px;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 2em; margin-bottom: 10px;"></i>
-                        <h3>No se pudo cargar el inventario</h3>
-                        <p style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 5px;">${e.message}</p>
-                        <small style="color: #aaa;">
-                            Si ves "Failed to fetch", es posible que el navegador esté bloqueando la conexión.<br>
-                            Intenta abrir este archivo usando un servidor local o revisa la consola (F12).
-                        </small>
-                    </div>`;
+        // --- GESTIÓN DE SOCKETS (EVENTOS EN TIEMPO REAL) ---
+
+        // 1. CAMBIO DE ESTADO DE CÁMARA (Lógica v2)
+        socket.on('stream_status_update', (data) => {
+            console.log(`📺 Estado Cámara: ${data.status.toUpperCase()}`);
+            isStreamOnline = (data.status === 'online');
+
+            if (isStreamOnline) {
+                // Estado: CÁMARA ENCENDIDA
+                els.overlayStandby.classList.add('hidden'); // Ocultar Standby
+                els.badgeStandby.style.display = 'none';
+                els.badgeLive.style.display = 'none'; // Aún no mostramos "EN VIVO" real hasta verificar cliente
+                els.sysStatus.innerText = "Cámara Activa (Esperando cliente)";
+                els.sysStatus.style.color = "var(--secondary)";
+
+                // Intentar precargar HLS para minimizar latencia
+                if (!hls) initHlsPlayer();
+            } else {
+                // Estado: CÁMARA APAGADA (Ahorro)
+                els.overlayStandby.classList.remove('hidden');
+                els.badgeLive.style.display = 'none';
+                els.badgeStandby.style.display = 'block';
+                els.sysStatus.innerText = "Modo ECO (Standby)";
+                els.sysStatus.style.color = "#666";
+
+                // Detener reproductor para ahorrar recursos del navegador
+                destroyHlsPlayer();
             }
-        }
-
-        function renderProducts() {
-            els.grid.innerHTML = "";
-            products.forEach(p => {
-                const btn = document.createElement('button');
-                btn.className = "product-btn";
-                // Usamos el SKU o ID para añadir
-                btn.onclick = () => addToCart(p);
-                btn.innerHTML = `
-                    <span class="p-name">${p.name}</span>
-                    <span class="p-price">Bs ${parseFloat(p.price).toFixed(2)}</span>
-                `;
-                els.grid.appendChild(btn);
-            });
-        }
-
-        // --- SOCKET EVENTS ---
-
-        // 1. NFC DETECTADO (Handshake comienza)
-        socket.on('nfc_pending_video', (data) => {
-            console.log("💳 NFC Detectado:", data);
-            
-            // UI Update: Mostrar "Cargando..." y datos preliminares
-            els.overlayIdle.classList.add('hidden');
-            els.overlayProc.classList.remove('hidden');
-            document.getElementById('procText').innerText = `Cliente: ${data.studentName} - Esperando Video...`;
-            
-            // Preparar UI de usuario
-            els.userCard.classList.add('active');
-            els.uName.innerText = data.studentName;
-            els.uBalance.innerText = "...";
-            
-            els.statusText.innerText = "🟠 Handshake Video...";
         });
 
-        // 2. VIDEO CONFIRMADO (Sesión Lista)
+        // 2. NUEVO CLIENTE DETECTADO (NFC)
+        socket.on('nfc_pending_video', (data) => {
+            console.log("💳 NFC Detectado:", data.studentName);
+
+            // Mostrar UI de carga inmediatamente
+            // Si la cámara ya estaba online, esto será casi imperceptible
+            if (!isStreamOnline) {
+                els.overlayStandby.classList.add('hidden');
+                els.overlayProc.classList.remove('hidden');
+            }
+
+            // Preparar tarjeta de usuario (estado "cargando")
+            updateUserUI(data.studentName, "...", "...");
+        });
+
+        // 3. VIDEO VERIFICADO (Sesión Lista)
         socket.on('student_scanned', (data) => {
-            console.log("✅ Sesión Activa:", data);
+            console.log("✅ Sesión Confirmada:", data.sessionId);
             currentSessionId = data.sessionId;
 
-            // UI Final
+            // Limpiar overlays
             els.overlayProc.classList.add('hidden');
-            els.badgeLive.classList.add('live');
-            
-            els.uName.innerText = data.name;
-            els.uBalance.innerText = parseFloat(data.balance).toFixed(2);
-            
-            // Mostrar Latencia
-            els.latencyBox.style.display = 'inline';
-            els.latencyValue.innerText = data.latencyMs;
+            els.overlayStandby.classList.add('hidden');
 
-            els.statusText.innerText = "🟢 EN LÍNEA";
+            // Mostrar badges
+            els.badgeLive.style.display = 'block';
+            els.latencyBox.style.display = 'block';
+            els.latVal.innerText = data.latencyMs;
 
-            startVideo();
+            // Datos Usuario
+            updateUserUI(data.name, data.balance, data.uid);
+
+            // Asegurar video
+            if (!hls) initHlsPlayer();
+            else els.video.play().catch(e => console.log("Autoplay:", e));
         });
 
-        socket.on('transaction_complete', () => {
-            resetSession();
-            alert("Venta Completada");
+        // 4. TRANSACCIÓN FINALIZADA
+        socket.on('transaction_complete', (data) => {
+            console.log("💰 Cobro completado:", data.total);
+            resetSessionUI();
         });
 
-        // --- VIDEO PLAYER ---
-        function startVideo() {
+        // --- REPRODUCTOR DE VIDEO (HLS.js) ---
+        function initHlsPlayer() {
             if (Hls.isSupported()) {
-                if(hls) hls.destroy();
+                console.log("▶️ Iniciando HLS...");
                 hls = new Hls({
-                    maxBufferLength: 2,
-                    liveSyncDurationCount: 1,
-                    manifestLoadingTimeOut: 5000
+                    maxBufferLength: 2,        // Buffer corto para baja latencia
+                    liveSyncDurationCount: 1,  // Mantenerse cerca del borde "live"
+                    enableWorker: true,
+                    manifestLoadingTimeOut: 5000,
                 });
-                hls.loadSource(`${STREAM_URL}?t=${Date.now()}`); // Anti-cache
+
+                hls.loadSource(`${STREAM_URL}?t=${Date.now()}`);
                 hls.attachMedia(els.video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => els.video.play());
-            } else if (els.video.canPlayType('application/vnd.apple.mpegurl')) {
-                els.video.src = `${STREAM_URL}?t=${Date.now()}`;
-                els.video.play();
+
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    els.video.play().catch(e => console.warn("Autoplay bloqueado por navegador"));
+                });
+
+                // Recuperación de errores automática
+                hls.on(Hls.Events.ERROR, function (event, data) {
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                console.warn("⚠️ HLS Network Error. Reintentando...");
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                console.warn("⚠️ HLS Media Error. Recuperando...");
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                destroyHlsPlayer();
+                                break;
+                        }
+                    }
+                });
             }
         }
 
-        function resetVideo() {
-            if(hls) hls.destroy();
-            els.video.pause();
-            els.video.src = "";
-            els.badgeLive.classList.remove('live');
+        function destroyHlsPlayer() {
+            if (hls) {
+                console.log("⏹️ Deteniendo HLS");
+                hls.destroy();
+                hls = null;
+            }
         }
 
-        // --- CART LOGIC ---
-        function addToCart(product) {
-            if(!currentSessionId) return; // Bloquear si no hay sesión
-            
-            cart.push(product);
-            updateCart();
+        // --- LÓGICA DE NEGOCIO (TIENDA) ---
+        async function fetchProducts() {
+            try {
+                const res = await fetch(`${API_URL}/api/products`);
+                products = await res.json();
+                renderGrid();
+            } catch (e) {
+                els.productsGrid.innerHTML = `<div style="color:red; padding:20px;">Error cargando productos.</div>`;
+            }
         }
 
-        function updateCart() {
-            els.cartList.innerHTML = "";
-            total = 0;
-            
-            cart.forEach(item => {
-                total += parseFloat(item.price);
-                const div = document.createElement('div');
-                div.className = "cart-item";
-                div.innerHTML = `<span>${item.name}</span> <span>Bs ${item.price}</span>`;
-                els.cartList.appendChild(div);
-            });
+        function renderGrid() {
+            if (products.length === 0) {
+                els.productsGrid.innerHTML = `<div style="padding:20px;">No hay productos disponibles.</div>`;
+                return;
+            }
+            els.productsGrid.innerHTML = products.map(p => `
+                <div class="product-btn" onclick='addToCart(${JSON.stringify(p)})'>
+                    <div class="product-name">${p.name}</div>
+                    <div class="product-price">Bs ${p.price}</div>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(p) {
+            if (!currentSessionId) {
+                // Efecto visual de "error" si intenta añadir sin usuario
+                els.userCard.style.transform = "translateX(5px)";
+                setTimeout(() => els.userCard.style.transform = "translateX(0)", 100);
+                return;
+            }
+            cart.push(p);
+            updateCartUI();
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            let total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
+
+            if (cart.length === 0) {
+                els.cartList.innerHTML = `<div style="text-align:center; padding-top:10px; color:#444;">Carrito Vacío</div>`;
+                els.btnCheckout.classList.remove('enabled');
+            } else {
+                els.cartList.innerHTML = cart.map((item, index) => `
+                    <div class="cart-item">
+                        <span>${item.name}</span>
+                        <div style="display:flex; align-items:center;">
+                            <span style="margin-right:10px;">${item.price}</span>
+                            <i class="fas fa-times" style="color:#d32f2f; cursor:pointer;" onclick="removeFromCart(${index})"></i>
+                        </div>
+                    </div>
+                `).join('');
+                els.btnCheckout.classList.add('enabled');
+            }
 
             els.cartTotal.innerText = total.toFixed(2);
-            
-            if(total > 0) els.btnCheckout.classList.add('enabled');
-            else els.btnCheckout.classList.remove('enabled');
         }
 
-        async function processCheckout() {
-            if(!currentSessionId || total === 0) return;
-
-            els.btnCheckout.innerText = "PROCESANDO...";
-            
-            try {
-                const res = await fetch(`${API_URL}/api/checkout`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        sessionId: currentSessionId,
-                        items: cart,
-                        total: total
-                    })
-                });
-                const json = await res.json();
-                if(!json.success) alert("Error: " + json.error);
-                
-            } catch(e) {
-                console.error(e);
-                alert("Error de red");
-            }
-            // Reset se maneja via socket 'transaction_complete'
+        function updateUserUI(name, balance, id) {
+            els.userCard.classList.add('active');
+            els.uName.innerText = name;
+            els.uBalance.innerText = balance;
+            els.uId.innerText = id ? `ID: ${id}` : "Cargando...";
         }
 
-        function resetSession() {
+        function resetSessionUI() {
             currentSessionId = null;
             cart = [];
-            total = 0;
-            
-            resetVideo();
-            
-            // UI Reset
-            els.overlayIdle.classList.remove('hidden');
-            els.overlayProc.classList.add('hidden');
+            updateCartUI();
+
+            // Reset UI Usuario
             els.userCard.classList.remove('active');
             els.uName.innerText = "--";
             els.uBalance.innerText = "0.00";
-            
+            els.uId.innerText = "ID: --";
+
+            els.badgeLive.style.display = 'none';
             els.latencyBox.style.display = 'none';
-            els.statusText.innerText = "Esperando Cliente";
-            
-            updateCart();
-            els.btnCheckout.innerText = "COBRAR";
+
+            // Nota: No cortamos el video aquí. Si el recreo sigue, 
+            // la cámara sigue "Online" (stream_status_update no cambia) 
+            // esperando al siguiente alumno.
         }
 
+        async function processCheckout() {
+            if (!currentSessionId || cart.length === 0) return;
+
+            els.btnCheckout.innerText = "PROCESANDO...";
+            els.btnCheckout.style.opacity = "0.7";
+
+            let total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
+
+            try {
+                const res = await fetch(`${API_URL}/api/checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId: currentSessionId, items: cart, total })
+                });
+
+                const data = await res.json();
+                if (!data.success) alert("Error: " + data.error);
+
+            } catch (e) {
+                console.error(e);
+                alert("Error de conexión al cobrar.");
+            } finally {
+                els.btnCheckout.innerText = 'COBRAR <i class="fas fa-chevron-right" style="margin-left:10px;"></i>';
+            }
+        }
     </script>
 </body>
+
 </html>
