@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Blue Box | WebRTC Test</title>
+    <style>
+        body {
+            background: #121212;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: sans-serif;
+        }
+
+        video {
+            width: 640px;
+            height: 360px;
+            background: black;
+            border: 2px solid #36ABD9;
+            margin-top: 20px;
+        }
+
+        .stats {
+            margin-top: 10px;
+            color: #aaa;
+            font-family: monospace;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #223D73;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Prueba de Concepto WebRTC (WHEP)</h1>
+    <video id="video" autoplay muted playsinline controls></video>
+
+    <div class="stats" id="status">Estado: Desconectado</div>
+    <button onclick="startWebRTC()">Iniciar Reproducción</button>
+
+    <script>
+        // CONFIGURACIÓN
+        // IMPORTANTE: Asegúrate de que este puerto (8889) esté abierto en GCP Firewall (TCP)
+        const WHEP_URL = "http://34.55.59.16:8889/cam/whep";
+
+        async function startWebRTC() {
+            const video = document.getElementById('video');
+            const status = document.getElementById('status');
+
+            status.innerText = "Estado: Conectando...";
+
+            try {
+                // 1. Crear PeerConnection
+                const pc = new RTCPeerConnection({
+                    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+                });
+
+                // 2. Configurar recepción de video
+                pc.addTransceiver("video", { direction: "recvonly" });
+                pc.addTransceiver("audio", { direction: "recvonly" });
+
+                pc.ontrack = (event) => {
+                    console.log("Track recibido:", event.track.kind);
+                    if (event.track.kind === 'video') {
+                        video.srcObject = event.streams[0];
+                    }
+                };
+
+                // 3. Crear Oferta (Offer)
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+
+                // 4. Enviar Oferta a MediaMTX (WHEP POST)
+                console.log("Enviando oferta a:", WHEP_URL);
+                const res = await fetch(WHEP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/sdp' },
+                    body: offer.sdp
+                });
+
+                if (!res.ok) throw new Error(`Error WHEP: ${res.status} ${res.statusText}`);
+
+                // 5. Recibir Respuesta (Answer)
+                const answerUser = await res.text();
+                await pc.setRemoteDescription({
+                    type: 'answer',
+                    sdp: answerUser
+                });
+
+                status.innerText = "Estado: 🟢 EN VIVO (WebRTC)";
+
+            } catch (err) {
+                console.error(err);
+                status.innerText = "Estado: 🔴 Error (" + err.message + ")";
+            }
+        }
+    </script>
+</body>
+
+</html>
