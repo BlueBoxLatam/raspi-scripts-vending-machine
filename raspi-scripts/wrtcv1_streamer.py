@@ -7,7 +7,8 @@ import os
 # CONFIGURACIÓN
 SERVER_IP = "34.55.59.16" # Tu IP de GCP
 STREAM_PORT = "8890"      # Puerto donde MediaMTX escuchará el SRT
-SRT_URL = f"srt://{SERVER_IP}:{STREAM_PORT}?mode=caller"
+# IMPORTANTE: MediaMTX v1.9+ requiere ?streamid=publish:nombre_del_path
+SRT_URL = f"srt://{SERVER_IP}:{STREAM_PORT}?mode=caller&streamid=publish:cam"
 
 stream_process = None
 
