@@ -447,10 +447,12 @@
     </div>
 
     <script>
-        // --- CONFIGURACIÓN WEBRTC & API ---
-        const API_URL = "https://api.grabbie.one"; // O tu IP de GCP si no usas dominio todavía
-        // MediaMTX address
-        const WHEP_URL = "http://34.55.59.16:8889/cam/whep";
+        // --- CONFIGURACIÓN WEBRTC & API (FIREBASE / PROD) ---
+        // Al estar en Firebase (HTTPS), necesitamos que el Backend también sea HTTPS.
+        // Haremos esto usando un subdominio (ej: api.grabbie.one) y Nginx en el server.
+        const DOMAIN = "https://api.grabbie.one"; // CAMBIA ESTO si usas otro subdominio
+        const API_URL = DOMAIN;
+        const WHEP_URL = `${DOMAIN}/whep/`; // Nginx redirigirá /whep/ -> puerto 8889
 
         const socket = io(API_URL, {
             transports: ['websocket', 'polling']
@@ -611,12 +613,13 @@
         // --- LÓGICA DE NEGOCIO (COPIADA DE V2) ---
         async function fetchProducts() {
             try {
-                // Usamos path relativo porque indexv3 se sirve desde el mismo express
-                const res = await fetch(`/api/products`);
+                // Usamos API_URL completa para asegurar que apunte al servidor correcto
+                const res = await fetch(`${API_URL}/api/products`);
                 products = await res.json();
                 renderGrid();
             } catch (e) {
-                els.productsGrid.innerHTML = `<div style="color:red; padding:20px;">Error cargando productos.</div>`;
+                console.error("Error products:", e);
+                els.productsGrid.innerHTML = `<div style="color:red; padding:20px;">Error cargando productos: ${e.message}</div>`;
             }
         }
 
@@ -696,7 +699,7 @@
             let total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
 
             try {
-                const res = await fetch(`/api/checkout`, {
+                const res = await fetch(`${API_URL}/api/checkout`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionId: currentSessionId, items: cart, total })
