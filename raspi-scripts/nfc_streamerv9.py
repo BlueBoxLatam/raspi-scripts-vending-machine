@@ -115,7 +115,7 @@ def start_ffmpeg():
     cmd = [
         'ffmpeg', 
         '-f', 'v4l2', 
-        '-framerate', '15',
+        '-framerate', '24',
         '-video_size', '640x480',
         '-i', '/dev/video0', 
         '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100', # Audio mudo dummy
