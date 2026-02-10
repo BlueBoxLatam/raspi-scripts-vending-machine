@@ -20,12 +20,13 @@ except ImportError:
     NFC_REAL_MODE = False
 
 # ================= CONFIGURACIÓN BLUE BOX =================
-VM_IP = "34.55.59.16" 
-API_URL = f"http://{VM_IP}:3000"
+VM_IP = "api.grabbie.one" # "34.55.59.16"
+API_URL = f"https://{VM_IP}" # Puerto 443 (HTTPS) maneja el proxy a 3000
 ID_ENDPOINT = f"{API_URL}/api/identify-student"
 
 # Configuración SRT -> WebRTC (MediaMTX)
 # Apuntamos al puerto 8890 y usamos el streamid para publicar en el path 'cam'
+# NOTA: SRT suele requerir IP directa si el dominio no resuelve bien a UDP, pero probemos con dominio.
 SRT_URL = f"srt://{VM_IP}:8890?mode=caller&streamid=publish:cam"
 
 VENDING_ID = "vm_001" 
@@ -131,7 +132,8 @@ def start_ffmpeg():
     ]
     
     # 'preexec_fn=os.setsid' permite matar todo el grupo de procesos después
-    stream_process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, preexec_fn=os.setsid)
+    # Habilitamos logs para debug (sacamos DEVNULL)
+    stream_process = subprocess.Popen(cmd, preexec_fn=os.setsid)
     is_streaming = True
     
     # Avisar al servidor que la cámara despertó (UI Update)

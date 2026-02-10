@@ -1,183 +1,319 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Blue Box UI | Terminal Estudiantil</title>
+    <title>Blue Box | Terminal Estudiantil</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Outfit -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;400;600;800&display=swap"
+        rel="stylesheet">
+
     <style>
         :root {
             --blue-dark: #223D73;
             --blue-medium: #36ABD9;
             --blue-light: #62C3D9;
-            --orange-light: #F2BF5E;
-            --orange-deep: #F2921D;
+            --orange-vivid: #F2921D;
+            --orange-soft: #F2BF5E;
         }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--blue-dark);
-            color: white;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            user-select: none;
-        }
-        .bg-blue-dark { background-color: var(--blue-dark); }
-        .bg-orange-deep { background-color: var(--orange-deep); }
-        .text-blue-light { color: var(--blue-light); }
-        .text-orange-light { color: var(--orange-light); }
-        .border-orange-deep { border-color: var(--orange-deep); }
-
-        /* Animación de escaneo */
-        .scan-ring {
-            border: 4px solid var(--blue-medium);
-            border-radius: 50%;
-            animation: pulse-ring 2s infinite;
-        }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(0.8); opacity: 0.5; }
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: #1e293b;
         }
 
-        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Animación personalizada de flecha */
+        @keyframes bounce-right {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            50% {
+                transform: translateX(15px);
+            }
         }
 
-        .status-pill {
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.1);
+        .animate-point-right {
+            animation: bounce-right 1.5s infinite ease-in-out;
+        }
+
+        /* Glass Cards for Light Theme */
+        .glass-card-light {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 40px -10px rgba(34, 61, 115, 0.15);
+        }
+
+        /* Vibrant Blobs Background */
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.6;
+            animation: float 10s infinite ease-in-out;
+        }
+
+        .blob-1 {
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: var(--blue-medium);
+            animation-delay: 0s;
+        }
+
+        .blob-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: var(--blue-light);
+            animation-delay: -5s;
+        }
+
+        .blob-3 {
+            top: 40%;
+            left: 40%;
+            width: 40vw;
+            height: 40vw;
+            background: var(--orange-soft);
+            opacity: 0.4;
+            animation-delay: -2s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-between p-8">
 
-    <!-- Header / Branding -->
-    <header class="w-full flex justify-between items-center">
-        <div class="flex items-center space-x-3">
-            <div class="bg-orange-deep p-3 rounded-2xl shadow-lg">
-                <i data-lucide="box" class="text-white w-8 h-8"></i>
+<body class="h-screen w-screen overflow-hidden select-none flex flex-col relative">
+
+    <!-- Background Blobs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <!-- Header -->
+    <header class="w-full flex justify-between items-center px-10 py-8 z-10">
+        <div class="flex items-center gap-4">
+            <div class="bg-white p-3 rounded-2xl shadow-lg">
+                <i class="fas fa-cube text-3xl text-[#223D73]"></i>
             </div>
             <div>
-                <h1 class="text-3xl font-black tracking-tighter">BLUE<span class="text-blue-light">BOX</span></h1>
-                <p class="text-[10px] uppercase tracking-[0.2em] text-blue-light font-bold">Smart Vending System</p>
+                <h1 class="text-3xl font-extrabold tracking-tight text-[#223D73]">BLUE<span
+                        class="text-[#36ABD9]">BOX</span></h1>
             </div>
         </div>
-        <div class="status-pill px-6 py-3 rounded-full flex items-center space-x-3 border border-white/10">
-            <div class="w-3 h-3 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.6)]"></div>
-            <span class="text-sm font-medium">SISTEMA ONLINE</span>
+        <div class="glass-card-light px-5 py-2 rounded-full flex items-center gap-3">
+            <div class="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_10px_#22c55e]"></div>
+            <span class="text-xs font-bold tracking-wider text-[#223D73]/70">ONLINE</span>
         </div>
     </header>
 
-    <!-- Main Content Area (Estado Dinámico) -->
-    <main id="main-display" class="flex-grow flex flex-col items-center justify-center w-full max-w-2xl text-center">
-        <!-- Pantalla Inicial (Esperando NFC) -->
-        <div id="state-idle" class="space-y-12">
-            <div class="relative flex items-center justify-center">
-                <div class="scan-ring absolute w-64 h-64"></div>
-                <div class="bg-white/5 p-12 rounded-full border border-white/10">
-                    <i data-lucide="contactless" class="w-32 h-32 text-blue-medium"></i>
+    <!-- Main Content State Machine -->
+    <main class="flex-grow w-full relative z-10 flex items-center justify-center p-8">
+
+        <!-- 1. STANDBY STATE (More White/Clean) -->
+        <div id="state-standby"
+            class="absolute inset-0 flex flex-col items-center justify-center text-center transition-all duration-500">
+            <div class="relative w-full max-w-lg mb-12">
+                <!-- Tarjeta Visual -->
+                <div
+                    class="glass-card-light p-12 rounded-[3rem] flex items-center justify-between relative overflow-hidden group">
+                    <div class="text-left space-y-2 relative z-10">
+                        <span class="text-sm font-bold uppercase tracking-widest text-[#223D73]/50">Para comenzar</span>
+                        <h2 class="text-4xl font-black text-[#223D73]">Pase su<br>Tarjeta</h2>
+                    </div>
+
+                    <div class="w-24 h-24 bg-[#223D73] rounded-full flex items-center justify-center shadow-xl z-10">
+                        <i class="fas fa-wifi text-4xl text-white rotate-90"></i>
+                    </div>
+
+                    <!-- Decorative Circle Inside -->
+                    <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-[#36ABD9]/20 rounded-full"></div>
                 </div>
-            </div>
-            <div class="space-y-4">
-                <h2 class="text-5xl font-bold">¡Hola!</h2>
-                <p class="text-2xl text-blue-light">Acerca tu tarjeta o pulsera NFC <br> para comenzar tu compra.</p>
+
+                <!-- Flecha Externa -->
+                <div
+                    class="absolute -right-24 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 animate-point-right">
+                    <i class="fas fa-arrow-right text-5xl text-[#F2921D]"></i>
+                    <span
+                        class="text-[10px] font-bold uppercase tracking-widest text-[#F2921D] rotate-90 mt-2">LECTOR</span>
+                </div>
             </div>
         </div>
 
-        <!-- Pantalla de Éxito (Saldo y Confirmación) - Oculta por defecto -->
-        <div id="state-success" class="hidden fade-in space-y-10 w-full">
-            <div class="bg-white rounded-[3rem] p-10 text-blue-dark shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-8 opacity-10">
-                    <i data-lucide="user" class="w-32 h-32 text-blue-dark"></i>
-                </div>
-                
-                <div class="flex flex-col items-center space-y-2 mb-8">
-                    <div class="bg-green-100 p-4 rounded-full mb-2">
-                        <i data-lucide="check-circle-2" class="text-green-600 w-12 h-12"></i>
-                    </div>
-                    <span class="text-sm font-bold uppercase tracking-widest text-gray-400">Identificación Exitosa</span>
-                    <h3 id="user-name" class="text-4xl font-black">Matias Fernandez</h3>
+        <!-- 2. SHOPPING STATE (Vibrant Info) -->
+        <div id="state-shopping"
+            class="hidden absolute inset-0 flex flex-col items-center justify-center text-center transition-all duration-500 opacity-0 translate-y-10">
+            <div class="glass-card-light w-full max-w-3xl p-12 rounded-[3rem] shadow-2xl relative overflow-hidden">
+                <!-- Top Decoration -->
+                <div
+                    class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#223D73] via-[#36ABD9] to-[#F2921D]">
                 </div>
 
-                <div class="grid grid-cols-1 gap-6">
-                    <div class="bg-gray-50 rounded-3xl p-8 border border-gray-100">
-                        <p class="text-gray-500 font-bold uppercase text-xs mb-2">Saldo Disponible</p>
-                        <p class="text-6xl font-black text-blue-dark">$<span id="user-balance">2.450</span></p>
+                <div class="flex flex-col items-center">
+                    <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-md">
+                        <i class="fas fa-check text-4xl text-green-500"></i>
+                    </div>
+
+                    <h2 class="text-lg font-bold text-[#223D73]/60 uppercase tracking-widest mb-1">¡Hola!</h2>
+                    <h3 id="user-name" class="text-5xl font-black text-[#223D73] mb-8 leading-tight">--</h3>
+
+                    <div
+                        class="bg-gradient-to-br from-[#223D73] to-[#1e3a8a] text-white rounded-3xl p-8 w-full max-w-md shadow-2xl transform scale-105">
+                        <p class="text-xs font-bold uppercase opacity-60 mb-2">Saldo Disponible</p>
+                        <p class="text-7xl font-black tracking-tight">Bs <span id="user-balance"
+                                class="text-[#F2921D]">0.00</span></p>
                     </div>
                 </div>
             </div>
 
-            <div class="space-y-6">
-                <div class="flex items-center justify-center space-x-4">
-                    <div class="bg-orange-deep w-12 h-12 rounded-full flex items-center justify-center">
-                        <i data-lucide="unlock" class="text-white w-6 h-6"></i>
-                    </div>
-                    <p class="text-3xl font-bold text-orange-light">Puerta Desbloqueada</p>
-                </div>
-                <p class="text-xl text-blue-light">Puedes abrir la heladera y retirar tus productos.</p>
+            <div
+                class="mt-12 flex items-center gap-3 animate-pulse bg-white/40 px-6 py-3 rounded-full backdrop-blur-sm">
+                <i class="fas fa-spinner fa-spin text-[#36ABD9]"></i>
+                <p class="text-sm font-bold text-[#223D73]">Esperando al operador...</p>
             </div>
         </div>
+
+        <!-- 3. CHECKOUT STATE (Summary) -->
+        <div id="state-checkout"
+            class="hidden absolute inset-0 flex flex-col items-center justify-center text-center transition-all duration-500 opacity-0 scale-95">
+            <div
+                class="bg-white w-full max-w-2xl p-10 rounded-[2.5rem] shadow-2xl relative z-20 border-t-8 border-green-500">
+                <div class="mb-8">
+                    <div class="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-receipt text-3xl text-green-600"></i>
+                    </div>
+                    <h2 class="text-3xl font-black text-[#223D73]">¡Compra Lista!</h2>
+                    <p class="text-[#223D73]/60">Resumen de transacción</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-6 bg-slate-50 rounded-2xl">
+                        <span class="text-sm font-bold uppercase text-slate-400">Total</span>
+                        <span class="text-3xl font-black text-[#223D73]">Bs <span id="summary-total">0.00</span></span>
+                    </div>
+                    <div
+                        class="flex justify-between items-center p-6 bg-[#F2921D]/10 rounded-2xl border border-[#F2921D]/20">
+                        <span class="text-sm font-bold uppercase text-[#F2921D]">Saldo Restante</span>
+                        <span class="text-3xl font-black text-[#F2921D]">Bs <span
+                                id="summary-new-balance">0.00</span></span>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <p class="text-sm text-slate-400 font-medium">Gracias por tu compra</p>
+                </div>
+            </div>
+        </div>
+
     </main>
 
-    <!-- Footer / Ayuda -->
-    <footer class="w-full flex justify-between items-center text-blue-light/50 font-medium">
-        <div class="flex items-center space-x-2">
-            <i data-lucide="help-circle" class="w-5 h-5"></i>
-            <span>¿Necesitas ayuda? Llama a un preceptor</span>
+    <!-- Footer -->
+    <footer
+        class="w-full flex justify-between items-center px-10 py-6 relative z-10 text-[#223D73]/40 text-xs font-bold tracking-widest">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-lock"></i>
+            <span>SECURE TERMINAL</span>
         </div>
-        <div class="text-right">
-            <p id="clock" class="text-xl font-bold text-white/80">10:45 AM</p>
-            <p class="text-xs uppercase tracking-tighter">Terminal ID: BB-01-TJA</p>
-        </div>
+        <div>ID: TB-01</div>
     </footer>
 
-    <!-- Botón de Simulación para probar (Oculto en producción) -->
-    <button onclick="simulateScan()" class="fixed bottom-4 left-1/2 -translate-x-1/2 opacity-20 hover:opacity-100 bg-white/10 px-4 py-2 rounded-full text-[10px] uppercase font-bold tracking-widest">
-        Simular Lectura de Tarjeta
-    </button>
-
     <script>
-        // Inicializar iconos
-        lucide.createIcons();
+        // CONFIGURACIÓN SOCKET
+        const socket = io("https://api.grabbie.one");
 
-        // Reloj en tiempo real
-        function updateClock() {
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('clock').textContent = timeStr;
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
+        // DOM ELEMENTS
+        const states = {
+            standby: document.getElementById('state-standby'),
+            shopping: document.getElementById('state-shopping'),
+            checkout: document.getElementById('state-checkout')
+        };
 
-        // Lógica de simulación de flujo
-        function simulateScan() {
-            const idleState = document.getElementById('state-idle');
-            const successState = document.getElementById('state-success');
-            const mainDisplay = document.getElementById('main-display');
+        const ui = {
+            name: document.getElementById('user-name'),
+            balance: document.getElementById('user-balance'),
+            sumTotal: document.getElementById('summary-total'),
+            sumBal: document.getElementById('summary-new-balance')
+        };
 
-            // Cambiar a estado de carga/identificación brevemente
-            idleState.style.opacity = '0.5';
-            
+        // TRANSICIONES
+        function switchState(targetKey) {
+            // Ocultar todos
+            Object.values(states).forEach(el => {
+                el.classList.add('hidden', 'opacity-0', 'translate-y-10', 'scale-95');
+                el.classList.remove('flex', 'opacity-100', 'translate-y-0', 'scale-100');
+            });
+
+            // Mostrar target
+            const target = states[targetKey];
+            target.classList.remove('hidden');
+
+            // Timeout para efecto fade-in
             setTimeout(() => {
-                idleState.classList.add('hidden');
-                successState.classList.remove('hidden');
-                
-                // Efecto de sonido (opcional en JS real)
-                console.log("NFC Identificado - Abriendo Cerrojo");
-
-                // Volver al estado inicial después de 15 segundos (simulando fin de compra)
-                setTimeout(() => {
-                    successState.classList.add('hidden');
-                    idleState.classList.remove('hidden');
-                    idleState.style.opacity = '1';
-                }, 15000);
-
-            }, 800);
+                target.classList.remove('opacity-0', 'translate-y-10', 'scale-95');
+                target.classList.add('flex', 'opacity-100', 'translate-y-0', 'scale-100');
+            }, 50);
         }
+
+        // SOCKET LOGIC
+        socket.on('connect', () => {
+            console.log("Conectado al servidor");
+            socket.emit('join_client');
+        });
+
+        socket.on('client_welcome', (data) => {
+            ui.name.innerText = data.name;
+            // Formatear saldo a 2 decimales si viene como número
+            ui.balance.innerText = Number(data.balance).toFixed(2);
+            switchState('shopping');
+        });
+
+        socket.on('client_purchase_summary', (data) => {
+            ui.sumTotal.innerText = Number(data.total).toFixed(2);
+            ui.sumBal.innerText = Number(data.newBalance).toFixed(2);
+            switchState('checkout');
+
+            // Auto volver a standby
+            setTimeout(() => {
+                switchState('standby');
+            }, 4000);
+        });
+
+        socket.on('client_reset', () => {
+            switchState('standby');
+        });
+
+        // Inicio
+        switchState('standby');
     </script>
 </body>
+
 </html>
