@@ -131,8 +131,8 @@
             </div>
         </div>
         <div class="glass-card-light px-5 py-2 rounded-full flex items-center gap-3">
-            <div class="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_10px_#22c55e]"></div>
-            <span class="text-xs font-bold tracking-wider text-[#223D73]/70">ONLINE</span>
+            <div id="status-dot" class="w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_10px_#ef4444]"></div>
+            <span id="status-text" class="text-xs font-bold tracking-wider text-[#223D73]/70">OFFLINE</span>
         </div>
     </header>
 
@@ -162,9 +162,8 @@
                 <!-- Flecha Externa -->
                 <div
                     class="absolute -right-24 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 animate-point-right">
-                    <i class="fas fa-arrow-right text-5xl text-[#F2921D]"></i>
-                    <span
-                        class="text-[10px] font-bold uppercase tracking-widest text-[#F2921D] rotate-90 mt-2">LECTOR</span>
+                    <i class="fas fa-arrow-right text-6xl text-[#F2921D]"></i>
+                    <span class="text-2xl font-black uppercase tracking-widest text-[#F2921D] mt-2">LECTOR</span>
                 </div>
             </div>
         </div>
@@ -172,31 +171,30 @@
         <!-- 2. SHOPPING STATE (Vibrant Info) -->
         <div id="state-shopping"
             class="hidden absolute inset-0 flex flex-col items-center justify-center text-center transition-all duration-500 opacity-0 translate-y-10">
-            <div class="glass-card-light w-full max-w-3xl p-12 rounded-[3rem] shadow-2xl relative overflow-hidden">
+            <div class="glass-card-light w-full max-w-3xl p-6 rounded-[3rem] shadow-2xl relative overflow-hidden">
                 <!-- Top Decoration -->
                 <div
                     class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#223D73] via-[#36ABD9] to-[#F2921D]">
                 </div>
 
                 <div class="flex flex-col items-center">
-                    <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-md">
-                        <i class="fas fa-check text-4xl text-green-500"></i>
+                    <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-md">
+                        <i class="fas fa-check text-3xl text-green-500"></i>
                     </div>
 
-                    <h2 class="text-lg font-bold text-[#223D73]/60 uppercase tracking-widest mb-1">¡Hola!</h2>
-                    <h3 id="user-name" class="text-5xl font-black text-[#223D73] mb-8 leading-tight">--</h3>
+                    <h2 class="text-sm font-bold text-[#223D73]/60 uppercase tracking-widest mb-1">¡Hola!</h2>
+                    <h3 id="user-name" class="text-4xl font-black text-[#223D73] mb-4 leading-tight">--</h3>
 
                     <div
-                        class="bg-gradient-to-br from-[#223D73] to-[#1e3a8a] text-white rounded-3xl p-8 w-full max-w-md shadow-2xl transform scale-105">
-                        <p class="text-xs font-bold uppercase opacity-60 mb-2">Saldo Disponible</p>
-                        <p class="text-7xl font-black tracking-tight">Bs <span id="user-balance"
+                        class="bg-gradient-to-br from-[#223D73] to-[#1e3a8a] text-white rounded-3xl p-6 w-full max-w-md shadow-2xl transform scale-100">
+                        <p class="text-[10px] font-bold uppercase opacity-60 mb-2">Saldo Disponible</p>
+                        <p class="text-6xl font-black tracking-tight">Bs <span id="user-balance"
                                 class="text-[#F2921D]">0.00</span></p>
                     </div>
                 </div>
             </div>
 
-            <div
-                class="mt-12 flex items-center gap-3 animate-pulse bg-white/40 px-6 py-3 rounded-full backdrop-blur-sm">
+            <div class="mt-6 flex items-center gap-3 animate-pulse bg-white/40 px-6 py-3 rounded-full backdrop-blur-sm">
                 <i class="fas fa-spinner fa-spin text-[#36ABD9]"></i>
                 <p class="text-sm font-bold text-[#223D73]">Esperando al operador...</p>
             </div>
@@ -248,7 +246,9 @@
 
     <script>
         // CONFIGURACIÓN SOCKET
-        const socket = io("https://api.grabbie.one");
+        const socket = io("https://api.grabbie.one", {
+            transports: ['websocket', 'polling']
+        });
 
         // DOM ELEMENTS
         const states = {
@@ -261,7 +261,9 @@
             name: document.getElementById('user-name'),
             balance: document.getElementById('user-balance'),
             sumTotal: document.getElementById('summary-total'),
-            sumBal: document.getElementById('summary-new-balance')
+            sumBal: document.getElementById('summary-new-balance'),
+            statusDot: document.getElementById('status-dot'),
+            statusText: document.getElementById('status-text')
         };
 
         // TRANSICIONES
@@ -286,7 +288,24 @@
         // SOCKET LOGIC
         socket.on('connect', () => {
             console.log("Conectado al servidor");
+            ui.statusDot.classList.remove('bg-red-500', 'shadow-[0_0_10px_#ef4444]');
+            ui.statusDot.classList.add('bg-green-500', 'shadow-[0_0_10px_#22c55e]');
+            ui.statusText.innerText = "ONLINE";
             socket.emit('join_client');
+        });
+
+        socket.on('disconnect', () => {
+            console.log("Desconectado");
+            ui.statusDot.classList.remove('bg-green-500', 'shadow-[0_0_10px_#22c55e]');
+            ui.statusDot.classList.add('bg-red-500', 'shadow-[0_0_10px_#ef4444]');
+            ui.statusText.innerText = "OFFLINE";
+        });
+
+        socket.on('connect_error', (err) => {
+            console.error("Error conexión:", err);
+            ui.statusDot.classList.remove('bg-green-500');
+            ui.statusDot.classList.add('bg-red-500');
+            ui.statusText.innerText = "ERR: " + err.message; // Mostrar error real
         });
 
         socket.on('client_welcome', (data) => {
