@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grabbie | Tu heladera inteligente</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <style>
+        :root {
+            --blue-dark: #223D73;
+            --blue-medium: #36ABD9;
+            --blue-light: #62C3D9;
+            --orange-vivid: #F2921D;
+            --font-main: 'Outfit', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: #f8fafc;
+            color: var(--blue-dark);
+        }
+
+        .btn-primary {
+            background-color: var(--orange-vivid);
+            color: white;
+            font-weight: 800;
+            border-radius: 9999px;
+            transition: transform 0.1s;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+
+        /* Scanner Styles */
+        #reader {
+            width: 100%;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 4px solid var(--blue-dark);
+        }
+
+        #reader video {
+            object-fit: cover;
+            border-radius: 1.5rem;
+        }
+    </style>
+</head>
+
+<body class="h-screen w-full flex flex-col justify-between overflow-hidden relative">
+
+    <!-- 1. AUTH SCREEN -->
+    <div id="screen-auth"
+        class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white p-6 text-center">
+        <div class="mb-8">
+            <i class="fas fa-cube text-6xl text-[#223D73] mb-4"></i>
+            <h1 class="text-4xl font-black text-[#223D73]">Grabbie</h1>
+            <p class="text-gray-500 mt-2">Accede a tu cowork fridge</p>
+        </div>
+
+        <button id="btn-login"
+            class="btn-primary w-full max-w-xs py-4 text-xl shadow-lg flex items-center justify-center gap-3">
+            <i class="fab fa-google"></i>
+            <span>Iniciar con Google</span>
+        </button>
+    </div>
+
+    <!-- 2. DASHBOARD SCREEN -->
+    <div id="screen-dashboard" class="hidden absolute inset-0 z-40 flex flex-col bg-[#F4F7FB]">
+        <!-- Header -->
+        <header class="bg-[#223D73] text-white p-6 pb-12 rounded-b-[2.5rem] shadow-xl relative z-10">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-sm opacity-80">Bienvenido,</h2>
+                    <h1 id="user-name" class="text-2xl font-bold">Cargando...</h1>
+                </div>
+                <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+
+            <!-- Balance Card -->
+            <div
+                class="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl flex justify-between items-center">
+                <div>
+                    <p class="text-xs uppercase tracking-wider opacity-70">Puntos Grabbie</p>
+                    <p class="text-4xl font-black mt-1"><span id="user-balance">--</span> <span
+                            class="text-sm font-normal opacity-60">pts</span></p>
+                </div>
+                <div class="w-12 h-12 bg-[#F2921D] rounded-full flex items-center justify-center text-white shadow-lg">
+                    <i class="fas fa-wallet text-xl"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Action Area -->
+        <main class="flex-grow flex flex-col items-center justify-center p-6 -mt-8 z-0">
+
+            <!-- Scan Button (Default) -->
+            <div id="state-idle" class="flex flex-col items-center w-full">
+                <button id="btn-scan"
+                    class="w-48 h-48 bg-white rounded-full shadow-2xl flex flex-col items-center justify-center gap-2 border-4 border-[#36ABD9] relative overflow-hidden group">
+                    <div
+                        class="absolute inset-0 bg-[#36ABD9]/10 rounded-full scale-0 group-active:scale-100 transition-transform duration-300">
+                    </div>
+                    <i class="fas fa-qrcode text-5xl text-[#223D73]"></i>
+                    <span class="text-[#223D73] font-bold text-sm uppercase tracking-widest mt-2">Escanear</span>
+                </button>
+                <p class="mt-8 text-center text-gray-500 max-w-[200px]">Escanea el código en la pantalla de la heladera
+                    para abrirla.</p>
+            </div>
+
+            <!-- Scanner View (Active) -->
+            <div id="state-scanning" class="hidden w-full h-full flex flex-col items-center justify-start pt-10">
+                <div class="w-full max-w-sm relative">
+                    <div id="reader" class="shadow-2xl"></div>
+                    <button id="btn-close-scan"
+                        class="absolute -bottom-16 left-1/2 -translate-x-1/2 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-red-500">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <p class="mt-20 text-center text-gray-500 animate-pulse">Buscando código QR...</p>
+            </div>
+
+            <!-- Success/Process View -->
+            <div id="state-processing" class="hidden flex flex-col items-center text-center">
+                <div class="w-24 h-24 rounded-full border-4 border-[#F2921D] border-t-transparent animate-spin mb-6">
+                </div>
+                <h3 class="text-xl font-bold text-[#223D73]">Procesando...</h3>
+                <p class="text-sm text-gray-500">Validando acceso</p>
+            </div>
+
+        </main>
+
+        <!-- Bottom Nav -->
+        <nav class="bg-white p-4 pb-8 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] rounded-t-[2rem]">
+            <div class="flex justify-around items-center text-[#223D73]/40">
+                <button class="flex flex-col items-center gap-1 text-[#F2921D]">
+                    <i class="fas fa-home text-xl"></i>
+                    <span class="text-[10px] font-bold">Inicio</span>
+                </button>
+                <button class="flex flex-col items-center gap-1">
+                    <i class="fas fa-history text-xl"></i>
+                    <span class="text-[10px] font-bold">Historial</span>
+                </button>
+                <button id="btn-logout" class="flex flex-col items-center gap-1">
+                    <i class="fas fa-sign-out-alt text-xl"></i>
+                    <span class="text-[10px] font-bold">Salir</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+        // --- FIREBASE CONFIG (REAL KEYS CORRECTED) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAlKx7Hqy86SipUiXIZOzJtuhWQbw9AMKk",
+            authDomain: "app-grabbie-one.firebaseapp.com",
+            projectId: "app-grabbie-one",
+            storageBucket: "app-grabbie-one.firebasestorage.app",
+            messagingSenderId: "753817694524",
+            appId: "1:753817694524:web:4cc36c091f942da449ae39",
+            measurementId: "G-BWMLYSZNV8"
+        };
+
+        // Init Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // --- STATE & DOM ---
+        let currentUser = null;
+        let html5QrcodeScanner = null;
+
+        const screens = {
+            auth: document.getElementById('screen-auth'),
+            dashboard: document.getElementById('screen-dashboard')
+        };
+
+        const states = {
+            idle: document.getElementById('state-idle'),
+            scanning: document.getElementById('state-scanning'),
+            processing: document.getElementById('state-processing')
+        };
+
+        const ui = {
+            name: document.getElementById('user-name'),
+            balance: document.getElementById('user-balance'),
+            qrReader: document.getElementById("reader")
+        };
+
+        // --- AUTH FLOW ---
+        document.getElementById('btn-login').addEventListener('click', () => {
+            // Usamos Redirect en lugar de Popup para que funcione bien en todos los celulares
+            signInWithRedirect(auth, provider).catch(err => alert("Error login: " + err.message));
+        });
+
+        // Manejar el resultado del redirect (importante para móviles)
+        getRedirectResult(auth).catch(err => {
+            console.error("Error redirect result:", err);
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                showScreen('dashboard');
+                ui.name.innerText = user.displayName.split(' ')[0]; // First name
+                startBalanceListener(user.uid);
+            } else {
+                currentUser = null;
+                showScreen('auth');
+            }
+        });
+
+        function startBalanceListener(uid) {
+            onSnapshot(doc(db, "users", uid), (doc) => {
+                if (doc.exists()) {
+                    const data = doc.data();
+                    ui.balance.innerText = data.points || 0;
+                    // Persist locally for offline check
+                    localStorage.setItem('grabbie_points', data.points || 0);
+                } else {
+                    ui.balance.innerText = "0";
+                }
+            });
+        }
+
+        // --- UI HELPERS ---
+        function showScreen(name) {
+            Object.values(screens).forEach(el => el.classList.add('hidden'));
+            screens[name].classList.remove('hidden');
+        }
+
+        function setDashboardState(stateName) {
+            Object.values(states).forEach(el => el.classList.add('hidden'));
+            states[stateName].classList.remove('hidden');
+        }
+
+        // --- SCANNER LOGIC ---
+        document.getElementById('btn-scan').addEventListener('click', startScanner);
+        document.getElementById('btn-close-scan').addEventListener('click', stopScanner);
+
+        function startScanner() {
+            setDashboardState('scanning');
+            html5QrcodeScanner = new Html5Qrcode("reader");
+
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                (err) => { /* ignore standard errors */ }
+            ).catch(err => {
+                console.error(err);
+                alert("Error iniciando cámara. Permite el acceso.");
+                setDashboardState('idle');
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner.clear();
+                    html5QrcodeScanner = null;
+                    setDashboardState('idle');
+                });
+            } else {
+                setDashboardState('idle');
+            }
+        }
+
+        // --- VALIDATION LOGIC ---
+        async function onScanSuccess(decodedText, decodedResult) {
+            // Stop scanning immediately
+            html5QrcodeScanner.stop().then(() => {
+                html5QrcodeScanner.clear();
+                html5QrcodeScanner = null;
+            });
+
+            setDashboardState('processing');
+
+            // Format check: Expected JSON or specifc string format
+            // Let's assume the QR contains a raw encoded token string like "GB_FRIDGE_001_172839281"
+            // We send this to server
+
+            try {
+                const idToken = await currentUser.getIdToken();
+
+                const response = await fetch("https://api.grabbie.one/api/validate-qr-access", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({
+                        qrToken: decodedText,
+                        userId: currentUser.uid
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert("✅ ¡Acceso Concedido!");
+                } else {
+                    alert("⛔ Acceso Denegado: " + (result.error || "Saldo insuficiente o QR inválido"));
+                }
+
+            } catch (e) {
+                alert("🔥 Error conectando con el servidor");
+            } finally {
+                setDashboardState('idle');
+            }
+        }
+    </script>
+</body>
+
+</html>
