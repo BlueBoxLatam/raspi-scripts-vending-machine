@@ -4,29 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blue Box | Operator Panel v3</title>
+    <title>Grabbie | Operator Panel v3</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            /* Palette provided by user */
-            --dark-blue: #1A3C6E;
-            /* Main Header/Sidebar */
-            --action-blue: #36ABD9;
-            /* Primary Buttons/Highlights */
-            --sky-blue: #62C3D9;
-            /* Accents */
-            --sun-yellow: #F2BF5E;
-            /* Warning/Info */
-            --vivid-orange: #F2921D;
-            /* Call to Action (Pay) */
+            /* Paleta Oficial */
+            --dark-blue: #223D73;    /* Primario (Corporativo) */
+            --action-blue: #36ABD9;  /* Secundario (Acción/Interacción) */
+            --sky-blue: #62C3D9;     /* Complementario (Suavizado) */
+            --sun-yellow: #F2BF5E;   /* Énfasis 1 (Contraste/Alerta) */
+            --vivid-orange: #F2921D; /* Énfasis 2 (Llamado a la Acción) */
 
-            --bg-light: #F4F7FB;
-            /* Main Background */
-            --card-white: #FFFFFF;
-            /* Card Background */
+            --bg-light: #F4F7FB;     /* Main Background */
+            --card-white: #FFFFFF;   /* Card Background */
             --text-dark: #2C3E50;
             --text-muted: #7F8C8D;
         }
@@ -64,6 +57,7 @@
             font-weight: 800;
             color: var(--dark-blue);
             font-size: 1.8rem;
+            letter-spacing: 1px;
         }
 
         /* Video Container */
@@ -72,8 +66,7 @@
             border-radius: 20px;
             overflow: hidden;
             position: relative;
-            padding-top: 56.25%;
-            /* 16:9 */
+            padding-top: 56.25%; /* 16:9 */
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
             border: 4px solid var(--card-white);
         }
@@ -96,8 +89,7 @@
         .overlay {
             position: absolute;
             inset: 0;
-            background: rgba(26, 60, 110, 0.95);
-            /* Dark Blue Opacity */
+            background: rgba(34, 61, 115, 0.95); /* Usando el Azul Primario */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -246,21 +238,19 @@
     <div class="left-panel">
         <header>
             <i class="fas fa-cube" style="color:var(--action-blue); margin-right:12px; font-size:1.5rem;"></i>
-            <h2>BLUE BOX</h2>
+            <h2>GRABBIE</h2>
         </header>
 
         <div class="video-card">
             <div class="video-inner">
                 <video id="videoWithAudio" muted playsinline></video>
 
-                <!-- Overlay: Standby -->
                 <div id="overlayStandby" class="overlay">
                     <i class="fas fa-leaf fa-3x" style="color:var(--sky-blue); margin-bottom:15px;"></i>
                     <h3>Modo Eco</h3>
                     <p style="opacity:0.8">Esperando cliente...</p>
                 </div>
 
-                <!-- Overlay: Processing -->
                 <div id="overlayProc" class="overlay hidden">
                     <i class="fas fa-circle-notch fa-spin fa-3x" style="color:var(--sun-yellow);"></i>
                     <h3 style="margin-top:15px;">Conectando...</h3>
@@ -270,13 +260,10 @@
 
         <div class="status-pill">
             <div>
-                <small
-                    style="color:var(--text-muted); font-weight:600; text-transform:uppercase; font-size:0.75rem;">Estado
-                    de Cámara</small>
+                <small style="color:var(--text-muted); font-weight:600; text-transform:uppercase; font-size:0.75rem;">Estado de Cámara</small>
                 <div id="statusText" style="color:var(--dark-blue); font-weight:700;">Desconectado</div>
             </div>
-            <div id="latencyBadge"
-                style="background:#E1F5FE; color:#0288D1; padding:5px 10px; border-radius:50px; font-size:0.8rem; display:none;">
+            <div id="latencyBadge" style="background:#E1F5FE; color:#0288D1; padding:5px 10px; border-radius:50px; font-size:0.8rem; display:none;">
                 <i class="fas fa-bolt"></i> <span id="latVal">0ms</span>
             </div>
         </div>
@@ -303,7 +290,6 @@
 
         <h4 style="margin:0; color:var(--text-muted);">Productos Disponibles</h4>
         <div id="productsGrid" class="products-grid">
-            <!-- Items injected by JS -->
             <div style="text-align:center; padding:40px; color:#aaa; width:100%;">
                 <i class="fas fa-circle-notch fa-spin"></i> Cargando...
             </div>
@@ -312,8 +298,7 @@
         <div class="cart-panel">
             <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
                 <span style="font-weight:600;">Total a Pagar</span>
-                <span style="font-size:1.4rem; font-weight:800; color:var(--dark-blue);">Bs <span
-                        id="cartTotal">0.00</span></span>
+                <span style="font-size:1.4rem; font-weight:800; color:var(--dark-blue);">Bs <span id="cartTotal">0.00</span></span>
             </div>
             <button id="btnCheckout" class="checkout-btn" onclick="processCheckout()">
                 REALIZAR COBRO <i class="fas fa-arrow-right" style="margin-left:10px;"></i>
@@ -325,7 +310,8 @@
         // --- CONFIGURATION ---
         const DOMAIN = "https://api.grabbie.one";
         const API_URL = DOMAIN;
-        const WHEP_URL = `${DOMAIN}/whep/cam/whep`;
+        // Nueva URL apuntando al túnel Nginx directo
+        const WHEP_URL = `${DOMAIN}/cam/whep`;
 
         const socket = io(API_URL, {
             transports: ['websocket', 'polling']
